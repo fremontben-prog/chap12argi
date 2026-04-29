@@ -1,0 +1,271 @@
+{
+  "architecture": "per_crop_models",
+  "model_type": "GradientBoostingRegressor",
+  "features": [
+    "average_rain_fall_mm_per_year",
+    "pesticides_tonnes",
+    "avg_temp"
+  ],
+  "feature_labels": {
+    "average_rain_fall_mm_per_year": "Pluie (mm/an)",
+    "pesticides_tonnes": "Pesticides (t)",
+    "avg_temp": "Temp\u00e9rature (\u00b0C)"
+  },
+  "target": "hg/ha_yield",
+  "target_unit": "hg/ha",
+  "seed": 42,
+  "crops": [
+    "cassava",
+    "maize",
+    "plantains and others",
+    "potatoes",
+    "rice",
+    "sorghum",
+    "soybean",
+    "sweet potatoes",
+    "wheat",
+    "yams"
+  ],
+  "models_dir": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture",
+  "saved_models": {
+    "cassava": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_cassava.joblib",
+    "maize": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_maize.joblib",
+    "plantains and others": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_plantains_and_others.joblib",
+    "potatoes": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_potatoes.joblib",
+    "rice": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_rice.joblib",
+    "sorghum": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sorghum.joblib",
+    "soybean": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_soybean.joblib",
+    "sweet potatoes": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sweet_potatoes.joblib",
+    "wheat": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_wheat.joblib",
+    "yams": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_yams.joblib"
+  },
+  "crop_metrics": {
+    "cassava": {
+      "RMSE": 19598.215,
+      "MAE": 11228.6399,
+      "R2": 0.9513,
+      "MAPE": 12.116,
+      "MAE_t_ha": 1.123,
+      "overfit": 0.0358,
+      "cv_best_r2": 0.951
+    },
+    "maize": {
+      "RMSE": 7715.6669,
+      "MAE": 4291.3646,
+      "R2": 0.9189,
+      "MAPE": 16.011,
+      "MAE_t_ha": 0.429,
+      "overfit": 0.0724,
+      "cv_best_r2": 0.9278
+    },
+    "plantains and others": {
+      "RMSE": 30292.7964,
+      "MAE": 15588.5435,
+      "R2": 0.7826,
+      "MAPE": 14.1573,
+      "MAE_t_ha": 1.559,
+      "overfit": 0.1623,
+      "cv_best_r2": 0.7918
+    },
+    "potatoes": {
+      "RMSE": 24367.9154,
+      "MAE": 15450.2464,
+      "R2": 0.9367,
+      "MAPE": 11.9691,
+      "MAE_t_ha": 1.545,
+      "overfit": 0.0523,
+      "cv_best_r2": 0.9287
+    },
+    "rice": {
+      "RMSE": 4957.9163,
+      "MAE": 3073.3918,
+      "R2": 0.9352,
+      "MAPE": 9.0653,
+      "MAE_t_ha": 0.307,
+      "overfit": 0.0487,
+      "cv_best_r2": 0.916
+    },
+    "sorghum": {
+      "RMSE": 4120.1266,
+      "MAE": 2081.0247,
+      "R2": 0.9135,
+      "MAPE": 15.157,
+      "MAE_t_ha": 0.208,
+      "overfit": 0.0832,
+      "cv_best_r2": 0.8415
+    },
+    "soybean": {
+      "RMSE": 2537.2637,
+      "MAE": 1454.4022,
+      "R2": 0.894,
+      "MAPE": 15.1066,
+      "MAE_t_ha": 0.145,
+      "overfit": 0.0929,
+      "cv_best_r2": 0.889
+    },
+    "sweet potatoes": {
+      "RMSE": 24166.4363,
+      "MAE": 10455.392,
+      "R2": 0.8876,
+      "MAPE": 9.7217,
+      "MAE_t_ha": 1.046,
+      "overfit": 0.1051,
+      "cv_best_r2": 0.9209
+    },
+    "wheat": {
+      "RMSE": 4137.7145,
+      "MAE": 2674.7531,
+      "R2": 0.9499,
+      "MAPE": 11.7153,
+      "MAE_t_ha": 0.267,
+      "overfit": 0.0387,
+      "cv_best_r2": 0.9533
+    },
+    "yams": {
+      "RMSE": 16417.383,
+      "MAE": 8106.0374,
+      "R2": 0.9075,
+      "MAPE": 13.9106,
+      "MAE_t_ha": 0.811,
+      "overfit": 0.0726,
+      "cv_best_r2": 0.9244
+    }
+  },
+  "crop_best_params": {
+    "cassava": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 100,
+      "subsample": 0.8
+    },
+    "maize": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "plantains and others": {
+      "learning_rate": 0.01,
+      "max_depth": 5,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "potatoes": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "rice": {
+      "learning_rate": 0.1,
+      "max_depth": 5,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "sorghum": {
+      "learning_rate": 0.1,
+      "max_depth": 7,
+      "n_estimators": 200,
+      "subsample": 0.8
+    },
+    "soybean": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "sweet potatoes": {
+      "learning_rate": 0.1,
+      "max_depth": 5,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "wheat": {
+      "learning_rate": 0.1,
+      "max_depth": 5,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "yams": {
+      "learning_rate": 0.01,
+      "max_depth": 7,
+      "n_estimators": 300,
+      "subsample": 1.0
+    }
+  },
+  "crop_data_stats": {
+    "cassava": {
+      "n_samples": 2045,
+      "mean_yield": 150479.0,
+      "std_yield": 89739.0
+    },
+    "maize": {
+      "n_samples": 4121,
+      "mean_yield": 36310.0,
+      "std_yield": 27456.0
+    },
+    "plantains and others": {
+      "n_samples": 556,
+      "mean_yield": 106041.0,
+      "std_yield": 72128.0
+    },
+    "potatoes": {
+      "n_samples": 4276,
+      "mean_yield": 199802.0,
+      "std_yield": 93382.0
+    },
+    "rice": {
+      "n_samples": 3388,
+      "mean_yield": 40730.0,
+      "std_yield": 19170.0
+    },
+    "sorghum": {
+      "n_samples": 3039,
+      "mean_yield": 18636.0,
+      "std_yield": 15118.0
+    },
+    "soybean": {
+      "n_samples": 3223,
+      "mean_yield": 16731.0,
+      "std_yield": 7603.0
+    },
+    "sweet potatoes": {
+      "n_samples": 2890,
+      "mean_yield": 119058.0,
+      "std_yield": 69848.0
+    },
+    "wheat": {
+      "n_samples": 3857,
+      "mean_yield": 30116.0,
+      "std_yield": 18388.0
+    },
+    "yams": {
+      "n_samples": 847,
+      "mean_yield": 114140.0,
+      "std_yield": 54212.0
+    }
+  },
+  "mlflow_runs": {
+    "cassava": "745f87894cd2419ea0753d322d02b1dc",
+    "maize": "9c11a52982aa43768090d5219e818f89",
+    "plantains and others": "377979ad8e7741e1aaaea869b80a4de4",
+    "potatoes": "0f5fce971a1a45749dea708d28970224",
+    "rice": "860ac989e12b41848adbf7f2d0b7d2f1",
+    "sorghum": "93416ce68a544aef82370dc5e3dea3f4",
+    "soybean": "9078e0d6b66d4487afd13b36a98afe94",
+    "sweet potatoes": "6438d4603a8345ee98f43ba429ca2476",
+    "wheat": "ae3b4ce2917c4cd9b4e122b346605f29",
+    "yams": "4a091077219a447b8093f9a69aa6fb07"
+  },
+  "functions": {
+    "predict_yield": "predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict",
+    "recommend_crop": "recommend_crop(rainfall_mm, avg_temp, pesticides_tonnes, top_n, min_r2) -> DataFrame"
+  },
+  "leakage_note": "Architecture sans leakage : Crop n'est PAS une feature. Un mod\u00e8le GradientBoosting distinct est calibr\u00e9 par culture sur les seules relations climatiques/agronomiques r\u00e9elles.",
+  "global_performance": {
+    "mean_r2": 0.9077,
+    "median_r2": 0.9162,
+    "n_models": 10,
+    "n_good_models": 10
+  }
+}

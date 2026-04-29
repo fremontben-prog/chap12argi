@@ -1,0 +1,31 @@
+# Environnement virtuel
+venv/
+env/
+ENV/
+.venv/
+
+# Fichiers de configuration contenant des informations sensibles
+.env
+
+# Fichiers générés
+__pycache__/
+*.py[cod]
+*$py.class
+*.png
+
+# Fichiers de logs
+*.log
+logs/
+
+# Fichiers temporaires
+.~lock.*
+
+# Fichiers de données
+data/
+
+# Fichiers de MLFlow
+mlruns/
+*.db
+
+# Jupyter Notebook
+.ipynb

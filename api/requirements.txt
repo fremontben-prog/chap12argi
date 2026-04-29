@@ -1,0 +1,13 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# requirements.txt — Crop Yield Prediction API
+# ──────────────────────────────────────────────────────────────────────────────
+ 
+# Serveur web & API
+fastapi==0.115.5
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+ 
+# Machine Learning
+scikit-learn==1.7.2
+joblib==1.5.3
+numpy==2.2.6
