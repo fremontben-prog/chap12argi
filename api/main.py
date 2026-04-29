@@ -6,13 +6,14 @@ Endpoints : POST /predict  |  POST /recommend
 import os
 import json
 import glob
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import joblib
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_config
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Configuration
@@ -23,54 +24,36 @@ MODELS_DIR    = Path(os.getenv("MODELS_DIR",    str(BASE_DIR / "models_par_cultu
 METADATA_PATH = Path(os.getenv("METADATA_PATH", str(BASE_DIR / "model_metadata.json")))
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Application
+# État global
 # ──────────────────────────────────────────────────────────────────────────────
 
-app = FastAPI(
-    title="🌾 Crop Yield Prediction API",
-    description=(
-        "API de prédiction de rendement agricole basée sur des modèles "
-        "GradientBoosting entraînés par culture. "
-        "Features : pluviométrie (mm/an), température moyenne (°C), pesticides (tonnes)."
-    ),
-    version="1.0.0",
-)
-
-models: dict = {}
-metadata: dict = {}
-historical_means: dict = {}   # t/ha par culture
-crop_metrics: dict = {}       # R², RMSE, MAE… par culture
+models: dict           = {}
+metadata: dict         = {}
+historical_means: dict = {}
+crop_metrics: dict     = {}
 
 
 def _load_resources() -> None:
     """Charge les modèles .joblib et les métadonnées JSON."""
     global models, metadata, historical_means, crop_metrics
 
-    # --- Métadonnées ---
     if METADATA_PATH.exists():
         with open(METADATA_PATH, "r", encoding="utf-8") as f:
             metadata = json.load(f)
-
-        # Structure réelle : metadata["crop_metrics"][crop] = {R2, RMSE, MAE_t_ha, ...}
         crop_metrics = metadata.get("crop_metrics", {})
-
-        # Moyennes historiques en hg/ha → converties en t/ha
-        data_stats = metadata.get("crop_data_stats", {})
+        data_stats   = metadata.get("crop_data_stats", {})
         historical_means = {
             crop: stats["mean_yield"] / 10_000
             for crop, stats in data_stats.items()
         }
     else:
         print(f"[WARN] Métadonnées introuvables : {METADATA_PATH}")
-        metadata         = {}
-        crop_metrics     = {}
-        historical_means = {}
+        metadata = {}; crop_metrics = {}; historical_means = {}
 
-    # --- Modèles ---
     pattern = str(MODELS_DIR / "model_*.joblib")
     for path in sorted(glob.glob(pattern)):
-        stem = Path(path).stem                              # "model_cassava"
-        crop = stem.removeprefix("model_").replace("_", " ")  # "cassava"
+        stem = Path(path).stem
+        crop = stem.removeprefix("model_").replace("_", " ")
         try:
             models[crop] = joblib.load(path)
         except Exception as exc:
@@ -82,47 +65,72 @@ def _load_resources() -> None:
         print(f"[OK] {len(models)} modèles chargés : {sorted(models.keys())}")
 
 
-@app.on_event("startup")
-def startup_event():
+# ──────────────────────────────────────────────────────────────────────────────
+# Lifespan (remplace @on_event déprécié)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     _load_resources()
+    yield
+
+
+app = FastAPI(
+    title="🌾 Crop Yield Prediction API",
+    description=(
+        "API de prédiction de rendement agricole basée sur des modèles "
+        "GradientBoosting entraînés par culture. "
+        "Features : pluviométrie (mm/an), température moyenne (°C), pesticides (tonnes)."
+    ),
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Schémas Pydantic
+# Schémas Pydantic V2
 # ──────────────────────────────────────────────────────────────────────────────
 
 class PredictRequest(BaseModel):
-    crop: str = Field(..., example="cassava",
-                      description="Nom de la culture (anglais, minuscules)")
-    rainfall_mm: float = Field(..., ge=0, le=10000, example=1200.0,
-                               description="Pluviométrie annuelle (mm/an)")
-    avg_temp: float = Field(..., ge=-10, le=60, example=22.0,
-                            description="Température moyenne annuelle (°C)")
-    pesticides_tonnes: float = Field(..., ge=0, example=50000.0,
-                                     description="Quantité de pesticides (tonnes)")
+    model_config = model_config(protected_namespaces=())
 
-    @validator("crop")
-    def crop_lowercase(cls, v):
+    crop: str = Field(..., description="Nom de la culture (anglais, minuscules)",
+                      json_schema_extra={"example": "cassava"})
+    rainfall_mm: float = Field(..., ge=0, le=10000,
+                               description="Pluviométrie annuelle (mm/an)",
+                               json_schema_extra={"example": 1200.0})
+    avg_temp: float = Field(..., ge=-10, le=60,
+                            description="Température moyenne annuelle (°C)",
+                            json_schema_extra={"example": 22.0})
+    pesticides_tonnes: float = Field(..., ge=0,
+                                     description="Quantité de pesticides (tonnes)",
+                                     json_schema_extra={"example": 50000.0})
+
+    @field_validator("crop")
+    @classmethod
+    def crop_lowercase(cls, v: str) -> str:
         return v.strip().lower()
 
 
 class YieldPrediction(BaseModel):
+    model_config = model_config(protected_namespaces=())
+
     crop: str
     yield_hg_ha: float  = Field(..., description="Rendement prédit (hg/ha)")
     yield_t_ha: float   = Field(..., description="Rendement prédit (t/ha)")
-    mae_t_ha: Optional[float]         = Field(None, description="MAE du modèle (t/ha)")
+    mae_t_ha: Optional[float]          = Field(None, description="MAE du modèle (t/ha)")
     vs_historique_pct: Optional[float] = Field(None, description="Écart vs moyenne historique (%)")
     model_r2: Optional[float]          = Field(None, description="R² du modèle sur le jeu de test")
     fiabilite: str = Field(..., description="Fiabilité du modèle")
 
 
 class RecommendRequest(BaseModel):
-    rainfall_mm: float = Field(..., ge=0, le=10000, example=1200.0,
-                               description="Pluviométrie annuelle (mm/an)")
-    avg_temp: float = Field(..., ge=-10, le=60, example=22.0,
-                            description="Température moyenne annuelle (°C)")
-    pesticides_tonnes: float = Field(..., ge=0, example=50000.0,
-                                     description="Quantité de pesticides (tonnes)")
+    rainfall_mm: float = Field(..., ge=0, le=10000,
+                               json_schema_extra={"example": 1200.0})
+    avg_temp: float    = Field(..., ge=-10, le=60,
+                               json_schema_extra={"example": 22.0})
+    pesticides_tonnes: float = Field(..., ge=0,
+                                     json_schema_extra={"example": 50000.0})
 
 
 class RecommendResponse(BaseModel):
@@ -136,24 +144,21 @@ class RecommendResponse(BaseModel):
 # Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _features(rainfall_mm: float, avg_temp: float, pesticides_tonnes: float) -> np.ndarray:
-    """Vecteur de features dans l'ordre attendu par les modèles."""
+def _features(rainfall_mm: float, avg_temp: float,
+              pesticides_tonnes: float) -> np.ndarray:
     return np.array([[rainfall_mm, pesticides_tonnes, avg_temp]])
 
 
 def _build_prediction(crop: str, rainfall_mm: float,
                       avg_temp: float, pesticides_tonnes: float) -> YieldPrediction:
-    model       = models[crop]
     X           = _features(rainfall_mm, avg_temp, pesticides_tonnes)
-    yield_hg_ha = float(model.predict(X)[0])
+    yield_hg_ha = float(models[crop].predict(X)[0])
     yield_t_ha  = yield_hg_ha / 10_000
 
-    # Métriques depuis crop_metrics (structure réelle du JSON)
     m        = crop_metrics.get(crop, {})
     r2       = m.get("R2")
     mae_t_ha = m.get("MAE_t_ha")
 
-    # Écart vs moyenne historique
     hist_mean = historical_means.get(crop)
     vs_hist   = None
     if hist_mean and hist_mean > 0:
@@ -183,7 +188,6 @@ def _build_prediction(crop: str, rainfall_mm: float,
 
 @app.get("/", tags=["Health"])
 def root():
-    """Healthcheck — vérifie que l'API est en ligne."""
     return {
         "status": "ok",
         "models_loaded": len(models),
@@ -193,20 +197,11 @@ def root():
 
 @app.get("/crops", tags=["Info"])
 def list_crops():
-    """Liste des cultures disponibles."""
     return {"crops": sorted(models.keys()), "count": len(models)}
 
 
 @app.post("/predict", response_model=YieldPrediction, tags=["Prédiction"])
 def predict(body: PredictRequest):
-    """
-    Prédit le rendement pour **une culture** donnée.
-
-    - **crop** : nom de la culture (`cassava`, `wheat`, `rice`…)
-    - **rainfall_mm** : pluviométrie annuelle en mm
-    - **avg_temp** : température moyenne en °C
-    - **pesticides_tonnes** : quantité de pesticides en tonnes
-    """
     if body.crop not in models:
         raise HTTPException(
             status_code=404,
@@ -221,14 +216,6 @@ def predict(body: PredictRequest):
 
 @app.post("/recommend", response_model=RecommendResponse, tags=["Recommandation"])
 def recommend(body: RecommendRequest):
-    """
-    Prédit le rendement de **toutes les cultures** et retourne le classement
-    par rendement décroissant.
-
-    - **rainfall_mm** : pluviométrie annuelle en mm
-    - **avg_temp** : température moyenne en °C
-    - **pesticides_tonnes** : quantité de pesticides en tonnes
-    """
     if not models:
         raise HTTPException(status_code=503, detail="Aucun modèle chargé.")
 

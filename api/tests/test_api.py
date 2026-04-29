@@ -1,9 +1,6 @@
 """
 api/tests/test_api.py
-Tests unitaires de l'API FastAPI — Crop Yield Predictor
-
-Lance avec :
-    pytest api/tests/ -v
+Tests unitaires — Crop Yield Predictor
 """
 
 import json
@@ -12,14 +9,13 @@ import numpy as np
 import joblib
 import pytest
 from pathlib import Path
-from fastapi.testclient import TestClient
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Fixtures — modèles factices et métadonnées minimales
+# 1. Fixtures sur disque
 # ──────────────────────────────────────────────────────────────────────────────
 
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
-MODELS_DIR   = FIXTURES_DIR / "models_par_culture"
+FIXTURES_DIR  = Path(__file__).parent / "fixtures"
+MODELS_DIR    = FIXTURES_DIR / "models_par_culture"
 METADATA_PATH = FIXTURES_DIR / "model_metadata.json"
 
 CROPS = ["cassava", "maize", "wheat"]
@@ -40,43 +36,53 @@ FAKE_METADATA = {
         "maize":   {"n_samples": 4121, "mean_yield":  36310.0, "std_yield": 27456.0},
         "wheat":   {"n_samples": 3857, "mean_yield":  30116.0, "std_yield": 18388.0},
     },
-    "global_performance": {"mean_r2": 0.939, "median_r2": 0.949, "n_models": 3, "n_good_models": 3},
+    "global_performance": {"mean_r2": 0.939, "median_r2": 0.949, "n_models": 3},
 }
 
 
 class _FakeModel:
-    """Modèle factice qui retourne toujours 136700 hg/ha (= 13.67 t/ha)."""
+    """Retourne toujours 136700 hg/ha = 13.67 t/ha."""
     def predict(self, X):
         return np.array([136700.0])
 
 
 def _create_fixtures():
-    """Crée les fichiers de fixtures nécessaires aux tests."""
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     for crop in CROPS:
-        slug = crop.replace(" ", "_")
-        path = MODELS_DIR / f"model_{slug}.joblib"
-        if not path.exists():
-            joblib.dump(_FakeModel(), path)
-    if not METADATA_PATH.exists():
-        with open(METADATA_PATH, "w", encoding="utf-8") as f:
-            json.dump(FAKE_METADATA, f)
+        joblib.dump(_FakeModel(), MODELS_DIR / f"model_{crop.replace(' ', '_')}.joblib")
+    with open(METADATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(FAKE_METADATA, f)
 
 
-# Créer les fixtures avant d'importer l'app
 _create_fixtures()
 
-# Pointer l'app vers les fixtures
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. Variables d'env AVANT import de main
+# ──────────────────────────────────────────────────────────────────────────────
+
 os.environ["MODELS_DIR"]    = str(MODELS_DIR)
 os.environ["METADATA_PATH"] = str(METADATA_PATH)
 
-from main import app  # noqa: E402  (import après config env)
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. Import de main puis injection directe des fakes dans les globaux
+# ──────────────────────────────────────────────────────────────────────────────
 
-client = TestClient(app)
+import main as main_module  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+# Injection directe — contourne tout problème de cache ou de lifespan
+main_module.models = {crop: _FakeModel() for crop in CROPS}
+main_module.crop_metrics = FAKE_METADATA["crop_metrics"]
+main_module.historical_means = {
+    crop: stats["mean_yield"] / 10_000
+    for crop, stats in FAKE_METADATA["crop_data_stats"].items()
+}
+
+client = TestClient(main_module.app)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Tests — Endpoints de base
+# Tests — Health
 # ──────────────────────────────────────────────────────────────────────────────
 
 class TestHealthEndpoints:
@@ -162,7 +168,6 @@ class TestPredictEndpoint:
     def test_predict_vs_historique_is_computed(self):
         r = client.post("/predict", json=self.VALID_PAYLOAD)
         data = r.json()
-        # 13.67 t/ha vs moyenne cassava 15.05 t/ha → doit être négatif
         assert data["vs_historique_pct"] is not None
         assert isinstance(data["vs_historique_pct"], float)
 
@@ -185,8 +190,7 @@ class TestRecommendEndpoint:
 
     def test_recommend_returns_all_crops(self):
         r = client.post("/recommend", json=self.VALID_PAYLOAD)
-        data = r.json()
-        assert len(data["recommendations"]) == len(CROPS)
+        assert len(r.json()["recommendations"]) == len(CROPS)
 
     def test_recommend_sorted_descending(self):
         r = client.post("/recommend", json=self.VALID_PAYLOAD)
@@ -201,9 +205,9 @@ class TestRecommendEndpoint:
     def test_recommend_conditions_echoed_in_response(self):
         r = client.post("/recommend", json=self.VALID_PAYLOAD)
         conditions = r.json()["conditions"]
-        assert conditions["rainfall_mm"]        == self.VALID_PAYLOAD["rainfall_mm"]
-        assert conditions["avg_temp"]           == self.VALID_PAYLOAD["avg_temp"]
-        assert conditions["pesticides_tonnes"]  == self.VALID_PAYLOAD["pesticides_tonnes"]
+        assert conditions["rainfall_mm"]       == self.VALID_PAYLOAD["rainfall_mm"]
+        assert conditions["avg_temp"]          == self.VALID_PAYLOAD["avg_temp"]
+        assert conditions["pesticides_tonnes"] == self.VALID_PAYLOAD["pesticides_tonnes"]
 
     def test_recommend_missing_field_returns_422(self):
         r = client.post("/recommend", json={"rainfall_mm": 1200.0})
@@ -222,14 +226,11 @@ class TestRecommendEndpoint:
 class TestInternalHelpers:
 
     def test_features_shape(self):
-        from main import _features
-        X = _features(1200.0, 22.0, 50000.0)
+        X = main_module._features(1200.0, 22.0, 50000.0)
         assert X.shape == (1, 3)
 
     def test_features_order(self):
-        """rainfall, pesticides, temp — ordre attendu par les modèles."""
-        from main import _features
-        X = _features(1200.0, 22.0, 50000.0)
+        X = main_module._features(1200.0, 22.0, 50000.0)
         assert X[0][0] == 1200.0    # rainfall
         assert X[0][1] == 50000.0   # pesticides
         assert X[0][2] == 22.0      # temp
