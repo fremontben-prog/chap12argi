@@ -13,7 +13,7 @@ from typing import Optional
 import numpy as np
 import joblib
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, field_validator, model_config
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Configuration
@@ -92,7 +92,7 @@ app = FastAPI(
 # ──────────────────────────────────────────────────────────────────────────────
 
 class PredictRequest(BaseModel):
-    model_config = model_config(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())
 
     crop: str = Field(..., description="Nom de la culture (anglais, minuscules)",
                       json_schema_extra={"example": "cassava"})
