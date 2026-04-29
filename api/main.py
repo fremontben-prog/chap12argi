@@ -1,7 +1,7 @@
-"""
-API FastAPI — Prédiction de Rendement Agricole
-Endpoints : POST /predict  |  POST /recommend
-"""
+# ──────────────────────────────────────────────────────────────────────────────
+# API FastAPI — Prédiction de Rendement Agricole
+# Endpoints : POST /predict  |  POST /recommend
+# ──────────────────────────────────────────────────────────────────────────────
 
 import os
 import json
