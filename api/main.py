@@ -113,7 +113,7 @@ class PredictRequest(BaseModel):
 
 
 class YieldPrediction(BaseModel):
-    model_config = model_config(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=())
 
     crop: str
     yield_hg_ha: float  = Field(..., description="Rendement prédit (hg/ha)")
