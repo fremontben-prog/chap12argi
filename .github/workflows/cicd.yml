@@ -181,32 +181,4 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ============================================================
-  # JOB 5 — NOTIFICATION SLACK EN CAS D'ÉCHEC
-  # ============================================================
-  notify-failure:
-    name: Notification echec
-    runs-on: ubuntu-latest
-    needs: [test, integration, build, push-docker]
-    if: failure()
 
-    steps:
-      - name: Envoi notification Slack
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "Pipeline CI/CD echoue sur ${{ github.repository }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Pipeline CI/CD echoue\nRepo: ${{ github.repository }}\nBranche: ${{ github.ref_name }}\nCommit: ${{ github.sha }}\nAuteur: ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Voir les logs>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
