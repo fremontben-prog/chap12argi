@@ -50,6 +50,7 @@ jobs:
           pip install --upgrade pip
           pip install -r api/requirements.txt
           pip install pytest pytest-cov httpx
+          pip show pydantic
 
       - name: Lancement des tests unitaires
         run: |
