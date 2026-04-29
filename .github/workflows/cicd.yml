@@ -3,14 +3,14 @@
 ## Pipeline CI/CD — Crop Yield Predictor
 ##
 ## Triggers :
-##   - Push sur main ou develop
-##   - Pull Request vers main
+##   - Push sur master ou develop
+##   - Pull Request vers master
 ##
 ## Jobs :
 ##   1. test        → tests unitaires (modèles factices, rapide)
 ##   2. integration → tests d'intégration (vrais .joblib, via GitHub Release)
 ##   3. build       → construction image Docker
-##   4. push-docker → publication Docker Hub (main uniquement)
+##   4. push-docker → publication Docker Hub (master uniquement)
 ##   5. notify      → notification Slack en cas d'échec
 ## ============================================================================
 
@@ -18,9 +18,9 @@ name: CI/CD — Crop Yield Predictor
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 env:
   DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/crop-yield-api
@@ -148,13 +148,13 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ============================================================
-  # JOB 4 — PUSH DOCKER HUB (main uniquement)
+  # JOB 4 — PUSH DOCKER HUB (master uniquement)
   # ============================================================
   push-docker:
     name: Push Docker Hub
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
       - name: Checkout du code
