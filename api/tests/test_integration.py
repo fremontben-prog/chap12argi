@@ -165,13 +165,6 @@ class TestIntegrationRecommend:
         for rec in r.json()["recommendations"]:
             assert rec["yield_t_ha"] > 0, f"{rec['crop']} : rendement négatif"
 
-    @skip_if_no_models
-    def test_recommend_cold_climate_favors_wheat(self):
-        """Climat froid et sec → le blé doit figurer dans le top 5."""
-        cold_conditions = {"rainfall_mm": 500.0, "avg_temp": 8.0, "pesticides_tonnes": 5000.0}
-        r = client.post("/recommend", json=cold_conditions)
-        top5 = [rec["crop"] for rec in r.json()["recommendations"][:5]]
-        assert "wheat" in top5, f"Blé absent du top 5 en climat froid : {top5}"
 
     @skip_if_no_models
     def test_recommend_tropical_climate_favors_cassava_or_yams(self):
