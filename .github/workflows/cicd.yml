@@ -117,6 +117,15 @@ jobs:
           ls api/
           ls api/models_par_culture/
 
+      - name: Debug env
+        run: |
+          echo "MODELS_DIR=$MODELS_DIR"
+          echo "METADATA_PATH=$METADATA_PATH"
+          python -c "import os; from pathlib import Path; p=Path(os.getenv('MODELS_DIR')); print(p.exists(), list(p.glob('*.joblib'))[:3])"
+        env:
+          MODELS_DIR: api/models_par_culture
+          METADATA_PATH: api/model_metadata.json
+
       - name: Lancement des tests d'intégration
         run: |
           pytest api/tests/test_integration.py \
