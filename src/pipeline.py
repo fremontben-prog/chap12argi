@@ -851,6 +851,6 @@ print(f"""
 ╚══════════════════════════════════════════════════════════════════════╝
 """)
 
-print("  → Lancez 'mlflow ui' pour visualiser toutes les expériences.")
+print("  → Lancez 'mlflow ui' depuis le terminal pour visualiser toutes les expériences.")
 print("  → Les PNG sont dans :", png_dir)
 print("  → Les modèles sont dans :", models_dir)

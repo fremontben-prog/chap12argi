@@ -246,16 +246,16 @@
     }
   },
   "mlflow_runs": {
-    "cassava": "745f87894cd2419ea0753d322d02b1dc",
-    "maize": "9c11a52982aa43768090d5219e818f89",
-    "plantains and others": "377979ad8e7741e1aaaea869b80a4de4",
-    "potatoes": "0f5fce971a1a45749dea708d28970224",
-    "rice": "860ac989e12b41848adbf7f2d0b7d2f1",
-    "sorghum": "93416ce68a544aef82370dc5e3dea3f4",
-    "soybean": "9078e0d6b66d4487afd13b36a98afe94",
-    "sweet potatoes": "6438d4603a8345ee98f43ba429ca2476",
-    "wheat": "ae3b4ce2917c4cd9b4e122b346605f29",
-    "yams": "4a091077219a447b8093f9a69aa6fb07"
+    "cassava": "94c3707e6c0445b2b4c422e8cfb24329",
+    "maize": "14e31a71bef54f66a5877161d74b1939",
+    "plantains and others": "8a97a81e391a4f8584e0483f7bcc73ea",
+    "potatoes": "7de6b384f363415bb5bd3714dc46a0b9",
+    "rice": "a798ba2eff2243afae076e23e511ee03",
+    "sorghum": "e749e3526b7e4109b01cc5fd755a357a",
+    "soybean": "0d55788daff445279f3dfd424deb15de",
+    "sweet potatoes": "0ce80ace5a714fe698998942232f549c",
+    "wheat": "3f6a25b93bd04a0c81a1fe0d6b5ddae9",
+    "yams": "ba393f0a4be44b69848921c9ee294c40"
   },
   "functions": {
     "predict_yield": "predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict",
