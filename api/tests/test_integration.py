@@ -35,7 +35,8 @@ skip_if_no_models = pytest.mark.skipif(
 
 if REAL_MODELS_AVAILABLE:
     from main import app
-    client = TestClient(app)
+    client = TestClient(app, raise_server_exceptions=True)
+    client.__enter__()
 else:
     client = None
 
