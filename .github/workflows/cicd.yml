@@ -112,6 +112,11 @@ jobs:
           echo "Modèles disponibles :"
           ls api/models_par_culture/
 
+      - name: Debug fichiers
+        run: |
+          ls api/
+          ls api/models_par_culture/
+
       - name: Lancement des tests d'intégration
         run: |
           pytest api/tests/test_integration.py \
