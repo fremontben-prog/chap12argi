@@ -128,6 +128,16 @@ jobs:
 
       - name: Lancement des tests d'intégration
         run: |
+          python -c "
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'api')
+          md = Path(os.getenv('MODELS_DIR', 'api/models_par_culture'))
+          mp = Path(os.getenv('METADATA_PATH', 'api/model_metadata.json'))
+          print('MODELS_DIR exists:', md.exists())
+          print('METADATA_PATH exists:', mp.exists())
+          print('joblib count:', len(list(md.glob('model_*.joblib'))))
+          "
           pytest api/tests/test_integration.py \
             -v \
             -m integration
