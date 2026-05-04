@@ -1,6 +1,6 @@
 {
   "architecture": "per_crop_models",
-  "model_type": "GradientBoostingRegressor",
+  "model_selection": "best_of_RF_XGBoost_GradientBoosting_via_GridSearchCV",
   "features": [
     "average_rain_fall_mm_per_year",
     "pesticides_tonnes",
@@ -47,25 +47,34 @@
       "MAPE": 12.116,
       "MAE_t_ha": 1.123,
       "overfit": 0.0358,
-      "cv_best_r2": 0.951
+      "cv_best_r2": 0.951,
+      "cv_std": 0.0073,
+      "composite_score": 0.9312,
+      "model_name": "GradientBoosting"
     },
     "maize": {
-      "RMSE": 7715.6669,
-      "MAE": 4291.3646,
-      "R2": 0.9189,
-      "MAPE": 16.011,
-      "MAE_t_ha": 0.429,
-      "overfit": 0.0724,
-      "cv_best_r2": 0.9278
+      "RMSE": 7692.6834,
+      "MAE": 4532.8161,
+      "R2": 0.9194,
+      "MAPE": 17.0335,
+      "MAE_t_ha": 0.453,
+      "overfit": 0.0581,
+      "cv_best_r2": 0.9251,
+      "cv_std": 0.0114,
+      "composite_score": 0.8869,
+      "model_name": "XGBoost"
     },
     "plantains and others": {
-      "RMSE": 30292.7964,
-      "MAE": 15588.5435,
-      "R2": 0.7826,
-      "MAPE": 14.1573,
-      "MAE_t_ha": 1.559,
-      "overfit": 0.1623,
-      "cv_best_r2": 0.7918
+      "RMSE": 28040.2611,
+      "MAE": 14905.8947,
+      "R2": 0.8138,
+      "MAPE": 14.3923,
+      "MAE_t_ha": 1.491,
+      "overfit": 0.1168,
+      "cv_best_r2": 0.8091,
+      "cv_std": 0.0702,
+      "composite_score": 0.7343,
+      "model_name": "XGBoost"
     },
     "potatoes": {
       "RMSE": 24367.9154,
@@ -74,16 +83,22 @@
       "MAPE": 11.9691,
       "MAE_t_ha": 1.545,
       "overfit": 0.0523,
-      "cv_best_r2": 0.9287
+      "cv_best_r2": 0.9287,
+      "cv_std": 0.0088,
+      "composite_score": 0.9079,
+      "model_name": "GradientBoosting"
     },
     "rice": {
-      "RMSE": 4957.9163,
-      "MAE": 3073.3918,
-      "R2": 0.9352,
-      "MAPE": 9.0653,
-      "MAE_t_ha": 0.307,
-      "overfit": 0.0487,
-      "cv_best_r2": 0.916
+      "RMSE": 4950.8303,
+      "MAE": 3086.4343,
+      "R2": 0.9354,
+      "MAPE": 8.892,
+      "MAE_t_ha": 0.309,
+      "overfit": 0.0389,
+      "cv_best_r2": 0.9147,
+      "cv_std": 0.0142,
+      "composite_score": 0.9117,
+      "model_name": "XGBoost"
     },
     "sorghum": {
       "RMSE": 4120.1266,
@@ -92,7 +107,10 @@
       "MAPE": 15.157,
       "MAE_t_ha": 0.208,
       "overfit": 0.0832,
-      "cv_best_r2": 0.8415
+      "cv_best_r2": 0.8415,
+      "cv_std": 0.0673,
+      "composite_score": 0.8517,
+      "model_name": "GradientBoosting"
     },
     "soybean": {
       "RMSE": 2537.2637,
@@ -101,34 +119,46 @@
       "MAPE": 15.1066,
       "MAE_t_ha": 0.145,
       "overfit": 0.0929,
-      "cv_best_r2": 0.889
+      "cv_best_r2": 0.889,
+      "cv_std": 0.0172,
+      "composite_score": 0.8424,
+      "model_name": "GradientBoosting"
     },
     "sweet potatoes": {
-      "RMSE": 24166.4363,
-      "MAE": 10455.392,
+      "RMSE": 24163.8945,
+      "MAE": 10492.0828,
       "R2": 0.8876,
-      "MAPE": 9.7217,
-      "MAE_t_ha": 1.046,
-      "overfit": 0.1051,
-      "cv_best_r2": 0.9209
+      "MAPE": 9.83,
+      "MAE_t_ha": 1.049,
+      "overfit": 0.0954,
+      "cv_best_r2": 0.9148,
+      "cv_std": 0.014,
+      "composite_score": 0.8357,
+      "model_name": "XGBoost"
     },
     "wheat": {
-      "RMSE": 4137.7145,
-      "MAE": 2674.7531,
-      "R2": 0.9499,
-      "MAPE": 11.7153,
-      "MAE_t_ha": 0.267,
-      "overfit": 0.0387,
-      "cv_best_r2": 0.9533
+      "RMSE": 4150.624,
+      "MAE": 2679.8214,
+      "R2": 0.9496,
+      "MAPE": 11.8419,
+      "MAE_t_ha": 0.268,
+      "overfit": 0.0343,
+      "cv_best_r2": 0.9527,
+      "cv_std": 0.0051,
+      "composite_score": 0.9309,
+      "model_name": "XGBoost"
     },
     "yams": {
-      "RMSE": 16417.383,
-      "MAE": 8106.0374,
-      "R2": 0.9075,
-      "MAPE": 13.9106,
-      "MAE_t_ha": 0.811,
-      "overfit": 0.0726,
-      "cv_best_r2": 0.9244
+      "RMSE": 13976.5724,
+      "MAE": 6763.0925,
+      "R2": 0.933,
+      "MAPE": 10.8736,
+      "MAE_t_ha": 0.676,
+      "overfit": 0.0527,
+      "cv_best_r2": 0.9257,
+      "cv_std": 0.032,
+      "composite_score": 0.897,
+      "model_name": "XGBoost"
     }
   },
   "crop_best_params": {
@@ -142,13 +172,13 @@
       "learning_rate": 0.05,
       "max_depth": 7,
       "n_estimators": 300,
-      "subsample": 0.8
+      "subsample": 1.0
     },
     "plantains and others": {
       "learning_rate": 0.01,
       "max_depth": 5,
       "n_estimators": 300,
-      "subsample": 0.8
+      "subsample": 1.0
     },
     "potatoes": {
       "learning_rate": 0.05,
@@ -178,7 +208,7 @@
       "learning_rate": 0.1,
       "max_depth": 5,
       "n_estimators": 300,
-      "subsample": 0.8
+      "subsample": 1.0
     },
     "wheat": {
       "learning_rate": 0.1,
@@ -187,11 +217,23 @@
       "subsample": 0.8
     },
     "yams": {
-      "learning_rate": 0.01,
+      "learning_rate": 0.05,
       "max_depth": 7,
-      "n_estimators": 300,
-      "subsample": 1.0
+      "n_estimators": 100,
+      "subsample": 0.8
     }
+  },
+  "crop_best_model": {
+    "cassava": "GradientBoosting",
+    "maize": "XGBoost",
+    "plantains and others": "XGBoost",
+    "potatoes": "GradientBoosting",
+    "rice": "XGBoost",
+    "sorghum": "GradientBoosting",
+    "soybean": "GradientBoosting",
+    "sweet potatoes": "XGBoost",
+    "wheat": "XGBoost",
+    "yams": "XGBoost"
   },
   "crop_data_stats": {
     "cassava": {
@@ -246,26 +288,30 @@
     }
   },
   "mlflow_runs": {
-    "cassava": "94c3707e6c0445b2b4c422e8cfb24329",
-    "maize": "14e31a71bef54f66a5877161d74b1939",
-    "plantains and others": "8a97a81e391a4f8584e0483f7bcc73ea",
-    "potatoes": "7de6b384f363415bb5bd3714dc46a0b9",
-    "rice": "a798ba2eff2243afae076e23e511ee03",
-    "sorghum": "e749e3526b7e4109b01cc5fd755a357a",
-    "soybean": "0d55788daff445279f3dfd424deb15de",
-    "sweet potatoes": "0ce80ace5a714fe698998942232f549c",
-    "wheat": "3f6a25b93bd04a0c81a1fe0d6b5ddae9",
-    "yams": "ba393f0a4be44b69848921c9ee294c40"
+    "cassava": "42179354cc6c4268b45855a8cf9b086b",
+    "maize": "191ef7a92c864698afcbcc8074816f22",
+    "plantains and others": "e496400dd8ee40208bc2744973be1877",
+    "potatoes": "5a0b2bc5d1d540ec8ea15a698162947a",
+    "rice": "f611df8614da483cab561b546c51766a",
+    "sorghum": "7e2bf866e9274709b72bb5f6757ff05d",
+    "soybean": "ed1ac2af05154733bb26d644e6761ced",
+    "sweet potatoes": "a297bc4e9b5d4b0fadc00c4774e9b04e",
+    "wheat": "9bab3a41c0e04214997c9df754df7fc9",
+    "yams": "7d58d68a47164455b687ca160627fa4a"
   },
   "functions": {
     "predict_yield": "predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict",
     "recommend_crop": "recommend_crop(rainfall_mm, avg_temp, pesticides_tonnes, top_n, min_r2) -> DataFrame"
   },
-  "leakage_note": "Architecture sans leakage : Crop n'est PAS une feature. Un mod\u00e8le GradientBoosting distinct est calibr\u00e9 par culture sur les seules relations climatiques/agronomiques r\u00e9elles.",
+  "leakage_note": "Architecture sans leakage : Crop n'est PAS une feature. Un mod\u00e8le distinct (meilleur parmi RF / XGBoost / GradientBoosting) est calibr\u00e9 par culture sur les seules relations climatiques/agronomiques r\u00e9elles.",
   "global_performance": {
-    "mean_r2": 0.9077,
-    "median_r2": 0.9162,
+    "mean_r2": 0.9134,
+    "median_r2": 0.9262,
     "n_models": 10,
-    "n_good_models": 10
+    "n_good_models": 10,
+    "winner_counts": {
+      "GradientBoosting": 4,
+      "XGBoost": 6
+    }
   }
 }

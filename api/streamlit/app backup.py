@@ -191,7 +191,7 @@ def call_recommend(rainfall_mm: float,
 st.markdown("""
 <div class="main-header">
     <h1>🌾 Crop Yield Predictor</h1>
-    <p>Prédiction de rendement agricole par apprentissage automatique — meilleur modèle par culture</p>
+    <p>Prédiction de rendement agricole par apprentissage automatique — GradientBoosting par culture</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -278,7 +278,6 @@ with tab_predict:
                 mae        = result.get("mae_t_ha")
                 vs_hist    = result.get("vs_historique_pct")
                 fiabilite  = result.get("fiabilite", "—")
-                model_used = result.get("model_used", "—")  # ← modèle utilisé
 
                 # Signe et couleur de l'écart historique
                 delta_str = ""
@@ -297,11 +296,10 @@ with tab_predict:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Métriques secondaires — 3 colonnes avec le modèle utilisé
-                m1, m2, m3 = st.columns(3)
+                # Métriques secondaires
+                m1, m2 = st.columns(2)
                 m1.metric("R² modèle", f"{r2:.3f}" if r2 else "—")
                 m2.metric("MAE", f"± {mae:.3f} t/ha" if mae else "—")
-                m3.metric("Modèle", model_used)
 
                 # Jauge visuelle
                 fig_gauge = go.Figure(go.Indicator(
@@ -437,41 +435,27 @@ with tab_recommend:
             # ── Tableau détaillé ───────────────────────────────────────────
             st.markdown("##### 📋 Tableau détaillé")
 
-            # Colonnes disponibles — model_used inclus si présent dans la réponse API
-            cols_available = ["crop", "yield_t_ha", "mae_t_ha",
-                              "vs_historique_pct", "model_r2", "model_used", "fiabilite"]
-            cols_present   = [c for c in cols_available if c in df.columns]
-
-            df_display = df[cols_present].copy()
-
-            col_rename = {
-                "crop":              "Culture",
-                "yield_t_ha":        "Rendement (t/ha)",
-                "mae_t_ha":          "MAE (t/ha)",
-                "vs_historique_pct": "Écart historique (%)",
-                "model_r2":          "R²",
-                "model_used":        "Modèle",
-                "fiabilite":         "Fiabilité",
-            }
-            df_display.rename(columns=col_rename, inplace=True)
+            df_display = df[["crop", "yield_t_ha", "mae_t_ha",
+                              "vs_historique_pct", "model_r2", "fiabilite"]].copy()
+            df_display.columns = [
+                "Culture", "Rendement (t/ha)", "MAE (t/ha)",
+                "Écart historique (%)", "R²", "Fiabilité"
+            ]
             df_display["Culture"] = df_display["Culture"].str.title()
             df_display.insert(0, "Rang", range(1, len(df_display) + 1))
-
-            col_config = {
-                "Rendement (t/ha)":     st.column_config.NumberColumn(format="%.3f"),
-                "MAE (t/ha)":           st.column_config.NumberColumn(format="%.3f"),
-                "Écart historique (%)": st.column_config.NumberColumn(format="%.1f"),
-                "R²":                   st.column_config.ProgressColumn(
-                                            min_value=0, max_value=1, format="%.3f"
-                                        ),
-                "Modèle":               st.column_config.TextColumn(),
-            }
 
             st.dataframe(
                 df_display,
                 use_container_width=True,
                 hide_index=True,
-                column_config=col_config,
+                column_config={
+                    "Rendement (t/ha)": st.column_config.NumberColumn(format="%.3f"),
+                    "MAE (t/ha)":       st.column_config.NumberColumn(format="%.3f"),
+                    "Écart historique (%)": st.column_config.NumberColumn(format="%.1f"),
+                    "R²":               st.column_config.ProgressColumn(
+                                            min_value=0, max_value=1, format="%.3f"
+                                        ),
+                },
             )
     else:
         st.markdown("""
@@ -498,5 +482,5 @@ with tab_recommend:
 st.divider()
 st.caption(
     "🌾 Crop Yield Predictor — Frontend Streamlit · Backend FastAPI · "
-    "Modèles RF / XGBoost / GradientBoosting entraînés sur le dataset FAO (28 242 obs., 10 cultures)"
+    "Modèles GradientBoosting entraînés sur le dataset FAO (28 242 obs., 10 cultures)"
 )

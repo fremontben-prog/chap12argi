@@ -4,15 +4,14 @@
 # Architecture : UN MODÈLE PAR CULTURE (sans leakage Crop_*)
 # Fonction 1   : Prédiction du rendement pour une culture donnée
 # Fonction 2   : Recommandation — classement de toutes les cultures
-# Source       : dataset_consolide.csv (df_yd enrichi avec proxies df_cy)
 #
 # PIPELINE :
 #   Phase 0 — Environnement & chargement
 #   Phase 1 — Comparaison des modèles de base (par culture)
-#   Phase 2 — Optimisation des hyperparamètres (GridSearchCV)
+#   Phase 2 — Optimisation multi-modèles (RF + XGBoost + GB) + sélection
 #   Phase 3 — Importance des variables & interprétation métier
 #   Phase 4 — Fonctions predict_yield / recommend_crop
-#   Phase 5 — Sauvegarde modèles + métadonnées API
+#   Phase 5 — Sauvegarde meilleur modèle + métadonnées API
 # ═══════════════════════════════════════════════════════════════════════════
 
 import os
@@ -46,8 +45,6 @@ from xgboost                  import XGBRegressor
 SEED = 42
 np.random.seed(SEED)
 
-# Features climatiques / agronomiques — Crop n'est PAS une feature
-# → chaque modèle est entraîné sur une seule culture (zéro leakage)
 CLIMATE_FEATURES = [
     'average_rain_fall_mm_per_year',
     'pesticides_tonnes',
@@ -56,7 +53,6 @@ CLIMATE_FEATURES = [
 TARGET      = 'hg/ha_yield'
 TARGET_UNIT = 'hg/ha'
 
-# Seuils métier pour la lisibilité des graphiques
 R2_GOOD = 0.70
 R2_MED  = 0.50
 
@@ -77,19 +73,17 @@ def line_print():
     print("─" * 70)
 
 def compute_metrics(y_true, y_pred) -> dict:
-    """Calcule RMSE, MAE, R², MAPE et une métrique économique (coût d'erreur)."""
-    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    mae  = mean_absolute_error(y_true, y_pred)
-    r2   = r2_score(y_true, y_pred)
-    mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
-    # Métrique économique : erreur moyenne en t/ha (lisible par un agriculteur)
+    rmse     = np.sqrt(mean_squared_error(y_true, y_pred))
+    mae      = mean_absolute_error(y_true, y_pred)
+    r2       = r2_score(y_true, y_pred)
+    mape     = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
     mae_t_ha = mae / 10000
     return {
         'RMSE':     round(rmse,     4),
         'MAE':      round(mae,      4),
         'R2':       round(r2,       4),
         'MAPE':     round(mape,     4),
-        'MAE_t_ha': round(mae_t_ha, 3),   # erreur moyenne en t/ha
+        'MAE_t_ha': round(mae_t_ha, 3),
     }
 
 def color_r2(v: float) -> str:
@@ -123,24 +117,16 @@ print(f"  Cultures ({len(CROPS):>2})  : {CROPS}")
 print(f"  Features        : {CLIMATE_FEATURES}")
 print(f"  Target          : {TARGET}")
 
-# Vérification des features
 missing_feat = [f for f in CLIMATE_FEATURES if f not in df_raw.columns]
 if missing_feat:
     raise ValueError(f"[!] Features manquantes dans le dataset : {missing_feat}")
 
-# Stats descriptives des features
 print("\n  Statistiques descriptives :")
 print(df_raw[CLIMATE_FEATURES + [TARGET]].describe().round(2).to_string())
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PHASE 1 — COMPARAISON DES MODÈLES DE BASE PAR CULTURE
-# ═══════════════════════════════════════════════════════════════════════════
-# Pour chaque culture :
-#   → Sous-dataset filtré sur cette culture uniquement
-#   → Comparaison de 4 modèles : Ridge, Lasso, RandomForest, GradientBoosting
-#   → Log de chaque run dans MLflow (phase = base_comparison)
-#   → Sélection automatique du meilleur modèle par culture
 # ═══════════════════════════════════════════════════════════════════════════
 
 title_print("Phase 1 — Comparaison des modèles de base par culture")
@@ -153,20 +139,15 @@ MODELS_BASE = {
     'RandomForest':     RandomForestRegressor(n_estimators=100, random_state=SEED, n_jobs=-1),
     'GradientBoosting': GradientBoostingRegressor(n_estimators=100, random_state=SEED),
     'XGBoost':          XGBRegressor(
-                            n_estimators=100,
-                            learning_rate=0.1,
-                            max_depth=5,
-                            subsample=0.8,
-                            colsample_bytree=0.8,
-                            random_state=SEED,
-                            n_jobs=-1
+                            n_estimators=100, learning_rate=0.1, max_depth=5,
+                            subsample=0.8, colsample_bytree=0.8,
+                            random_state=SEED, n_jobs=-1
                         )
 }
 
-# Stockage global
-phase1_results  = {}   # { crop: { modelname: metrics } }
-crop_data_stats = {}   # { crop: { n_samples, mean_yield, std_yield } }
-crop_splits     = {}   # { crop: (X_train, X_test, y_train, y_test) }
+phase1_results  = {}
+crop_data_stats = {}
+crop_splits     = {}
 
 for crop in CROPS:
     df_crop   = df_raw[df_raw['Crop'] == crop].copy()
@@ -201,19 +182,19 @@ for crop in CROPS:
         overfit       = round(metrics_train['R2'] - metrics_test['R2'], 4)
 
         with mlflow.start_run(run_name=f"{crop}__{modelname}__base"):
-            mlflow.set_tag('phase',   'base_comparison')
-            mlflow.set_tag('crop',    crop)
-            mlflow.set_tag('model',   modelname)
-            mlflow.log_param('n_train',   len(X_train))
-            mlflow.log_param('n_test',    len(X_test))
-            mlflow.log_param('features',  str(CLIMATE_FEATURES))
-            mlflow.log_metric('train_R2',    metrics_train['R2'])
-            mlflow.log_metric('test_R2',     metrics_test['R2'])
-            mlflow.log_metric('test_RMSE',   metrics_test['RMSE'])
-            mlflow.log_metric('test_MAE',    metrics_test['MAE'])
-            mlflow.log_metric('test_MAPE',   metrics_test['MAPE'])
+            mlflow.set_tag('phase', 'base_comparison')
+            mlflow.set_tag('crop',  crop)
+            mlflow.set_tag('model', modelname)
+            mlflow.log_param('n_train',  len(X_train))
+            mlflow.log_param('n_test',   len(X_test))
+            mlflow.log_param('features', str(CLIMATE_FEATURES))
+            mlflow.log_metric('train_R2',      metrics_train['R2'])
+            mlflow.log_metric('test_R2',       metrics_test['R2'])
+            mlflow.log_metric('test_RMSE',     metrics_test['RMSE'])
+            mlflow.log_metric('test_MAE',      metrics_test['MAE'])
+            mlflow.log_metric('test_MAPE',     metrics_test['MAPE'])
             mlflow.log_metric('test_MAE_t_ha', metrics_test['MAE_t_ha'])
-            mlflow.log_metric('overfit_gap', overfit)
+            mlflow.log_metric('overfit_gap',   overfit)
             mlflow.sklearn.log_model(model, name='model')
 
         phase1_results[crop][modelname] = {**metrics_test, 'overfit': overfit}
@@ -222,7 +203,7 @@ for crop in CROPS:
               f"MAE={metrics_test['MAE_t_ha']:.2f} t/ha | "
               f"Overfit={overfit:.4f}  ({time.time()-t0:.1f}s)")
 
-# ── Visualisation Phase 1 : heatmap R² (cultures × modèles) ───────────────
+# ── Visualisation Phase 1 ─────────────────────────────────────────────────
 title_print("Phase 1 — Visualisation comparaison modèles de base")
 
 df_r2_heat = pd.DataFrame(
@@ -235,7 +216,6 @@ fig.suptitle("Phase 1 — Comparaison des modèles de base par culture\n"
              "(features : rainfall, température, pesticides — sans leakage Crop_*)",
              fontsize=12)
 
-# Heatmap R²
 sns.heatmap(df_r2_heat, annot=True, fmt='.3f', cmap='RdYlGn',
             vmin=0, vmax=1, linewidths=0.5, ax=axes[0],
             cbar_kws={'label': 'R²'})
@@ -243,7 +223,6 @@ axes[0].set_title("R² par culture × modèle\n(vert=bon, rouge=faible)")
 axes[0].set_xlabel("Modèle")
 axes[0].set_ylabel("Culture")
 
-# Meilleur modèle par culture
 best_per_crop = df_r2_heat.idxmax(axis=1)
 best_r2       = df_r2_heat.max(axis=1).sort_values()
 colors_best   = [color_r2(v) for v in best_r2]
@@ -263,35 +242,88 @@ print("  [OK] phase1_comparaison_modeles.png sauvegardé")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# PHASE 2 — OPTIMISATION DES HYPERPARAMÈTRES (GridSearchCV)
+# PHASE 2 — OPTIMISATION MULTI-MODÈLES (RF + XGBoost + GB) + SÉLECTION
 # ═══════════════════════════════════════════════════════════════════════════
 # Pour chaque culture :
-#   → GradientBoosting comme modèle champion
-#   → GridSearchCV 5-fold sur une grille d'hyperparamètres
+#   → GridSearchCV 5-fold sur les 3 modèles candidats
+#   → Sélection par score composite :
+#       score = R²_test − λ_overfit × |overfit| − λ_std × std_cv
 #   → Log de tous les trials + du meilleur run dans MLflow
 #   → Comparaison avant/après optimisation
+#
+# Pondérations (ajustables) :
+#   LAMBDA_OVERFIT : pénalise le gap train/test        (défaut 0.5)
+#   LAMBDA_STD     : pénalise l'instabilité CV         (défaut 0.3)
+#
+# Intuition :
+#   - LAMBDA_OVERFIT élevé → favorise les modèles qui généralisent bien
+#   - LAMBDA_STD élevé     → favorise les modèles stables entre les folds
+#   - Les deux à 0         → revient à choisir sur le R² test seul
 # ═══════════════════════════════════════════════════════════════════════════
 
-title_print("Phase 2 — Optimisation des hyperparamètres (GridSearchCV)")
+title_print("Phase 2 — Optimisation multi-modèles (RF + XGBoost + GB)")
 
 mlflow.set_experiment(os.getenv("MLFLOW_EXPERIMENT_02"))
 
-PARAM_GRID = {
-    'n_estimators':  [100, 200, 300],
-    'max_depth':     [3, 5, 7],
-    'learning_rate': [0.01, 0.05, 0.1],
-    'subsample':     [0.8, 1.0],
+# ── Pondérations du score composite ───────────────────────────────────────
+LAMBDA_OVERFIT = 0.5   # pénalité sur |R²_train − R²_test|
+LAMBDA_STD     = 0.3   # pénalité sur std du CV R²
+
+def composite_score(test_r2: float, overfit: float, cv_std: float) -> float:
+    """
+    Score composite de sélection de modèle.
+    Plus élevé = meilleur compromis performance / généralisation / stabilité.
+
+    score = R²_test − LAMBDA_OVERFIT × |overfit| − LAMBDA_STD × std_cv
+    """
+    return test_r2 - LAMBDA_OVERFIT * abs(overfit) - LAMBDA_STD * cv_std
+
+print(f"  Score composite : R²_test "
+      f"− {LAMBDA_OVERFIT} × |overfit| "
+      f"− {LAMBDA_STD} × std_cv")
+
+# ── Grilles d'hyperparamètres par modèle ──────────────────────────────────
+CANDIDATE_MODELS = {
+    'RandomForest': {
+        'estimator': RandomForestRegressor(random_state=SEED, n_jobs=-1),
+        'param_grid': {
+            'n_estimators': [100, 200, 300],
+            'max_depth':    [None, 10, 20],
+            'min_samples_split': [2, 5],
+            'max_features': ['sqrt', 'log2'],
+        },
+    },
+    'XGBoost': {
+        'estimator': XGBRegressor(random_state=SEED, n_jobs=-1),
+        'param_grid': {
+            'n_estimators':  [100, 200, 300],
+            'max_depth':     [3, 5, 7],
+            'learning_rate': [0.01, 0.05, 0.1],
+            'subsample':     [0.8, 1.0],
+        },
+    },
+    'GradientBoosting': {
+        'estimator': GradientBoostingRegressor(random_state=SEED),
+        'param_grid': {
+            'n_estimators':  [100, 200, 300],
+            'max_depth':     [3, 5, 7],
+            'learning_rate': [0.01, 0.05, 0.1],
+            'subsample':     [0.8, 1.0],
+        },
+    },
 }
 
-# Stockage des modèles optimisés
-crop_models      = {}   # { crop: best_estimator }
-crop_metrics     = {}   # { crop: metrics }
-crop_best_params = {}   # { crop: best_params }
-phase2_runs      = {}   # { crop: run_id } pour retrouver dans MLflow
+# Stockage des résultats Phase 2
+crop_models          = {}   # { crop: best_estimator }
+crop_metrics         = {}   # { crop: metrics }
+crop_best_params     = {}   # { crop: best_params }
+crop_best_model_name = {}   # { crop: nom du modèle gagnant }
+crop_scores_detail   = {}   # { crop: { model: score_composite } } pour traçabilité
+phase2_runs          = {}   # { crop: run_id MLflow du meilleur }
 
 line_print()
-print(f"  {'Culture':<20} | {'CV R²':>8} | {'Test R²':>8} | "
-      f"{'RMSE':>10} | {'MAE t/ha':>9} | {'Overfit':>8}")
+print(f"  {'Culture':<22} | {'Modèle gagnant':<18} | {'Score':>7} | "
+      f"{'Test R²':>8} | {'Overfit':>8} | {'Std CV':>7} | {'MAE t/ha':>9}")
 line_print()
 
 for crop in CROPS:
@@ -301,87 +333,165 @@ for crop in CROPS:
     X_train, X_test, y_train, y_test = crop_splits[crop]
     t0 = time.time()
 
-    gs = GridSearchCV(
-        GradientBoostingRegressor(random_state=SEED),
-        PARAM_GRID,
-        cv=5, scoring='r2',
-        n_jobs=-1, verbose=0, refit=True
-    )
-    gs.fit(X_train, y_train)
-    best_model = gs.best_estimator_
+    # ── Boucle sur les 3 modèles candidats ────────────────────────────────
+    best_score     = -np.inf   # score composite
+    best_estimator = None
+    best_name      = None
+    best_gs        = None
+    best_cv_std    = None
+    scores_detail  = {}
 
-    # Métriques finales
-    metrics_test  = compute_metrics(y_test,  best_model.predict(X_test))
-    metrics_train = compute_metrics(y_train, best_model.predict(X_train))
+    for model_name, config in CANDIDATE_MODELS.items():
+        gs = GridSearchCV(
+            config['estimator'],
+            config['param_grid'],
+            cv=5, scoring='r2',
+            n_jobs=-1, verbose=0, refit=True
+        )
+        gs.fit(X_train, y_train)
+
+        # Métriques du meilleur trial de ce modèle
+        m_test  = compute_metrics(y_test,  gs.best_estimator_.predict(X_test))
+        m_train = compute_metrics(y_train, gs.best_estimator_.predict(X_train))
+        overfit_m = round(m_train['R2'] - m_test['R2'], 4)
+        cv_std_m  = round(
+            gs.cv_results_['std_test_score'][gs.best_index_], 4
+        )
+        score_m = composite_score(m_test['R2'], overfit_m, cv_std_m)
+        scores_detail[model_name] = {
+            'composite': round(score_m,    4),
+            'test_r2':   m_test['R2'],
+            'overfit':   overfit_m,
+            'cv_std':    cv_std_m,
+        }
+
+        # Log tous les trials de ce modèle dans MLflow
+        cv_results = pd.DataFrame(gs.cv_results_)
+        for _, row in cv_results.iterrows():
+            with mlflow.start_run(run_name=f"{crop}__{model_name}__gs_trial"):
+                mlflow.set_tag('phase',      'hyperopt_trial')
+                mlflow.set_tag('crop',       crop)
+                mlflow.set_tag('model_type', model_name)
+                mlflow.log_params({f"{model_name}__{k}": v
+                                   for k, v in row['params'].items()})
+                mlflow.log_metric('cv_mean_r2', row['mean_test_score'])
+                mlflow.log_metric('cv_std_r2',  row['std_test_score'])
+
+        # Garder le meilleur score composite toutes familles confondues
+        if score_m > best_score:
+            best_score     = score_m
+            best_estimator = gs.best_estimator_
+            best_name      = model_name
+            best_gs        = gs
+            best_cv_std    = cv_std_m
+
+    # ── Métriques finales du modèle gagnant ───────────────────────────────
+    metrics_test  = compute_metrics(y_test,  best_estimator.predict(X_test))
+    metrics_train = compute_metrics(y_train, best_estimator.predict(X_train))
     overfit       = round(metrics_train['R2'] - metrics_test['R2'], 4)
 
-    # ── Log tous les trials GridSearch ────────────────────────────────────
-    cv_results = pd.DataFrame(gs.cv_results_)
-    for _, row in cv_results.iterrows():
-        with mlflow.start_run(run_name=f"{crop}__gs_trial"):
-            mlflow.set_tag('phase', 'hyperopt_trial')
-            mlflow.set_tag('crop',  crop)
-            mlflow.log_params(row['params'])
-            mlflow.log_metric('cv_mean_r2', row['mean_test_score'])
-            mlflow.log_metric('cv_std_r2',  row['std_test_score'])
-
-    # ── Log du meilleur modèle ─────────────────────────────────────────────
-    with mlflow.start_run(run_name=f"{crop}__BEST") as run:
+    # ── Log du meilleur modèle ────────────────────────────────────────────
+    with mlflow.start_run(run_name=f"{crop}__BEST__{best_name}") as run:
         run_id = run.info.run_id
-        mlflow.set_tag('phase',   'best_model')
-        mlflow.set_tag('crop',    crop)
-        mlflow.set_tag('model',   'GradientBoosting')
-        mlflow.set_tag('dataset', 'dataset_consolide')
-        mlflow.log_params(gs.best_params_)
-        mlflow.log_metric('cv_best_r2',    gs.best_score_)
-        mlflow.log_metric('test_R2',       metrics_test['R2'])
-        mlflow.log_metric('test_RMSE',     metrics_test['RMSE'])
-        mlflow.log_metric('test_MAE',      metrics_test['MAE'])
-        mlflow.log_metric('test_MAPE',     metrics_test['MAPE'])
-        mlflow.log_metric('test_MAE_t_ha', metrics_test['MAE_t_ha'])
-        mlflow.log_metric('overfit_gap',   overfit)
-        mlflow.log_metric('n_train',       len(X_train))
-        mlflow.sklearn.log_model(best_model, name=f'model_{crop}')
+        mlflow.set_tag('phase',      'best_model')
+        mlflow.set_tag('crop',       crop)
+        mlflow.set_tag('model',      best_name)
+        mlflow.set_tag('dataset',    'dataset_consolide')
+        mlflow.log_params(best_gs.best_params_)
+        mlflow.log_metric('composite_score',  best_score)
+        mlflow.log_metric('cv_best_r2',       best_gs.best_score_)
+        mlflow.log_metric('cv_std_r2',        best_cv_std)
+        mlflow.log_metric('test_R2',          metrics_test['R2'])
+        mlflow.log_metric('test_RMSE',        metrics_test['RMSE'])
+        mlflow.log_metric('test_MAE',         metrics_test['MAE'])
+        mlflow.log_metric('test_MAPE',        metrics_test['MAPE'])
+        mlflow.log_metric('test_MAE_t_ha',    metrics_test['MAE_t_ha'])
+        mlflow.log_metric('overfit_gap',      overfit)
+        mlflow.log_metric('lambda_overfit',   LAMBDA_OVERFIT)
+        mlflow.log_metric('lambda_std',       LAMBDA_STD)
+        mlflow.log_metric('n_train',          len(X_train))
+        mlflow.sklearn.log_model(best_estimator, name=f'model_{crop}')
 
-    crop_models[crop]      = best_model
-    crop_metrics[crop]     = {**metrics_test, 'overfit': overfit,
-                               'cv_best_r2': round(gs.best_score_, 4)}
-    crop_best_params[crop] = gs.best_params_
+    crop_models[crop]          = best_estimator
+    crop_best_model_name[crop] = best_name
+    crop_scores_detail[crop]   = scores_detail
+    crop_metrics[crop]         = {
+        **metrics_test,
+        'overfit':          overfit,
+        'cv_best_r2':       round(best_gs.best_score_, 4),
+        'cv_std':           best_cv_std,
+        'composite_score':  round(best_score, 4),
+        'model_name':       best_name,
+    }
+    crop_best_params[crop] = best_gs.best_params_
     phase2_runs[crop]      = run_id
 
-    print(f"  {crop:<20} | {gs.best_score_:>8.4f} | {metrics_test['R2']:>8.4f} | "
-          f"{metrics_test['RMSE']:>10.0f} | {metrics_test['MAE_t_ha']:>9.3f} | "
-          f"{overfit:>8.4f}  ({time.time()-t0:.1f}s)")
+    print(f"  {crop:<22} | {best_name:<18} | {best_score:>7.4f} | "
+          f"{metrics_test['R2']:>8.4f} | {overfit:>8.4f} | "
+          f"{best_cv_std:>7.4f} | {metrics_test['MAE_t_ha']:>9.3f}  "
+          f"({time.time()-t0:.1f}s)")
 
 line_print()
+
+# ── Tableau de détail — scores composites par modèle et par culture ───────
+print(f"\n  Détail des scores composites "
+      f"(R²_test − {LAMBDA_OVERFIT}×|overfit| − {LAMBDA_STD}×std_cv) :")
+line_print()
+print(f"  {'Culture':<22} | "
+      + " | ".join(f"{m[:18]:>18}" for m in CANDIDATE_MODELS)
+      + " | Gagnant")
+line_print()
+for crop_d, detail in crop_scores_detail.items():
+    row_str = f"  {crop_d:<22} | "
+    for m in CANDIDATE_MODELS:
+        s      = detail.get(m, {}).get('composite', float('nan'))
+        marker = " ◄" if m == crop_best_model_name[crop_d] else "  "
+        row_str += f"{s:>16.4f}{marker} | "
+    row_str += crop_best_model_name[crop_d]
+    print(row_str)
+line_print()
+
+# Décompte par famille
+from collections import Counter
+winner_counts = Counter(crop_best_model_name.values())
+print(f"\n  Répartition des gagnants : {dict(winner_counts)}")
 
 # ── Visualisation Phase 2 ─────────────────────────────────────────────────
 title_print("Phase 2 — Visualisation post-optimisation")
 
 df_p2 = pd.DataFrame(crop_metrics).T.sort_values('R2', ascending=False)
 
-# Comparaison avant/après : R² base vs R² optimisé
-base_r2_gb = {
-    crop: phase1_results[crop].get('GradientBoosting', {}).get('R2', np.nan)
+# Comparaison avant/après : R² base (meilleur base) vs R² optimisé
+base_r2_best = {
+    crop: max(phase1_results[crop].get(m, {}).get('R2', -np.inf)
+              for m in ['RandomForest', 'XGBoost', 'GradientBoosting'])
     for crop in crop_models
 }
 df_compare = pd.DataFrame({
-    'R² base (GradientBoosting)': base_r2_gb,
-    'R² optimisé':                df_p2['R2'],
+    'R² base (meilleur base)': base_r2_best,
+    'R² optimisé':             df_p2['R2'],
 }).dropna().sort_values('R² optimisé')
 
-fig, axes = plt.subplots(1, 3, figsize=(20, max(5, len(crop_models) * 0.5 + 2)))
-fig.suptitle("Phase 2 — Modèles optimisés (GradientBoosting + GridSearchCV)\n"
-             "1 modèle par culture — features : rainfall, température, pesticides",
-             fontsize=12)
+fig, axes = plt.subplots(1, 3, figsize=(22, max(5, len(crop_models) * 0.5 + 2)))
+fig.suptitle(
+    "Phase 2 — Optimisation multi-modèles (RF / XGBoost / GradientBoosting + GridSearchCV)\n"
+    "1 modèle gagnant par culture — features : rainfall, température, pesticides",
+    fontsize=12
+)
 
 # Panel 1 : Avant / Après
 df_compare.plot(kind='barh', ax=axes[0],
                 color=['#95a5a6', '#2ecc71'], edgecolor='white', width=0.7)
 axes[0].axvline(R2_GOOD, color='green', linestyle='--', lw=1, label=f'Seuil bon ({R2_GOOD})')
-axes[0].set_title("R² avant vs après optimisation")
+axes[0].set_title("R² avant vs après optimisation\n(base: meilleur des 3 non-optimisé)")
 axes[0].set_xlabel("R²")
 axes[0].legend(fontsize=8)
+# Annoter le modèle gagnant
+for i, crop in enumerate(df_compare.index):
+    r2_val = df_compare.loc[crop, 'R² optimisé']
+    axes[0].text(r2_val + 0.005, i,
+                 crop_best_model_name.get(crop, ''), va='center', fontsize=7,
+                 color='#27ae60')
 
 # Panel 2 : RMSE en t/ha
 rmse_tha = (df_p2['RMSE'] / 10000).sort_values()
@@ -391,7 +501,7 @@ axes[1].set_xlabel("RMSE (t/ha)")
 for i, v in enumerate(rmse_tha.values):
     axes[1].text(v + 0.02, i, f'{v:.2f}', va='center', fontsize=9)
 
-# Panel 3 : MAE t/ha (interprétable par un agriculteur)
+# Panel 3 : MAE t/ha
 mae_tha = df_p2['MAE_t_ha'].sort_values()
 mae_tha.plot(kind='barh', ax=axes[2], color='#9b59b6', edgecolor='white')
 axes[2].set_title("Erreur moyenne (MAE) en t/ha\n(lisible par un agriculteur)")
@@ -408,6 +518,7 @@ print("  [OK] phase2_modeles_optimises.png sauvegardé")
 mean_r2   = df_p2['R2'].mean()
 median_r2 = df_p2['R2'].median()
 good_n    = (df_p2['R2'] >= R2_GOOD).sum()
+
 print(f"\n  R² moyen   : {mean_r2:.4f}")
 print(f"  R² médian  : {median_r2:.4f}")
 print(f"  Modèles R² ≥ {R2_GOOD} : {good_n}/{len(crop_models)}")
@@ -421,12 +532,12 @@ title_print("Phase 3 — Importance des variables & interprétation métier")
 
 mlflow.set_experiment(os.getenv("MLFLOW_EXPERIMENT_03"))
 
-# ── Importance par culture ─────────────────────────────────────────────────
 feature_labels = {
     'average_rain_fall_mm_per_year': 'Pluie (mm/an)',
     'pesticides_tonnes':             'Pesticides (t)',
     'avg_temp':                      'Température (°C)',
 }
+
 imp_data = {}
 for crop, model in crop_models.items():
     imp_data[crop] = {
@@ -438,9 +549,6 @@ df_imp = pd.DataFrame(imp_data).T
 print("\n  Importance des variables par culture :")
 print(df_imp.round(3).to_string())
 
-# Log importance dans MLflow
-# MLflow n'accepte pas les parenthèses dans les noms de métriques
-# → on utilise les noms courts des features originales (sans caractères spéciaux)
 FEATURE_SAFE_NAMES = {
     'average_rain_fall_mm_per_year': 'rainfall',
     'pesticides_tonnes':             'pesticides',
@@ -455,7 +563,6 @@ with mlflow.start_run(run_name="feature_importance_global"):
             safe_feat = FEATURE_SAFE_NAMES[feat]
             mlflow.log_metric(f"imp__{safe_crop}__{safe_feat}", float(val))
 
-# ── Corrélation température × rendement par culture ────────────────────────
 temp_corr = (
     df_raw.groupby('Crop')
           .corr(numeric_only=True)
@@ -467,7 +574,6 @@ temp_corr = (
           .round(3)
 )
 
-# ── Corrélation pluvionmétrie × rendement par culture ────────────────────────
 rain_corr = (
     df_raw.groupby('Crop')
           .corr(numeric_only=True)
@@ -479,7 +585,6 @@ rain_corr = (
           .round(3)
 )
 
-# ── Rendement moyen par culture ────────────────────────────────────────────
 yield_by_crop = (df_raw.groupby('Crop')[TARGET]
                         .agg(['mean', 'std', 'min', 'max', 'count'])
                         .reindex(list(crop_models.keys()))
@@ -496,16 +601,12 @@ fig.suptitle("Phase 3 — Importance des variables & Recommandations métier\n"
 
 gs_layout = gridspec.GridSpec(2, 3, figure=fig, hspace=0.45, wspace=0.35)
 
-# ── 1. Heatmap importance des variables ───────────────────────────────────
 ax1 = fig.add_subplot(gs_layout[0, 0])
 sns.heatmap(df_imp, annot=True, fmt='.2f', cmap='YlOrRd',
             linewidths=0.5, ax=ax1, cbar_kws={'label': 'Importance'})
 ax1.set_title("Importance des variables par culture\n"
               "(+ foncé = variable qui drive le + le rendement)", fontsize=10)
-ax1.set_xlabel("")
-ax1.set_ylabel("")
 
-# ── 2. Effet température ──────────────────────────────────────────────────
 ax2 = fig.add_subplot(gs_layout[0, 1])
 colors_tc = ['#e74c3c' if v < 0 else '#2ecc71' for v in temp_corr]
 ax2.barh(temp_corr.index, temp_corr.values, color=colors_tc, edgecolor='white')
@@ -517,7 +618,6 @@ for i, v in enumerate(temp_corr.values):
     ax2.text(v + (0.005 if v >= 0 else -0.005), i, f'{v:.2f}',
              va='center', ha='left' if v >= 0 else 'right', fontsize=9)
 
-# ── 3. Effet pluie ────────────────────────────────────────────────────────
 ax3 = fig.add_subplot(gs_layout[0, 2])
 colors_rc = ['#e74c3c' if v < 0 else '#3498db' for v in rain_corr]
 ax3.barh(rain_corr.index, rain_corr.values, color=colors_rc, edgecolor='white')
@@ -529,7 +629,6 @@ for i, v in enumerate(rain_corr.values):
     ax3.text(v + (0.003 if v >= 0 else -0.003), i, f'{v:.2f}',
              va='center', ha='left' if v >= 0 else 'right', fontsize=9)
 
-# ── 4. Rendement moyen par culture ────────────────────────────────────────
 ax4 = fig.add_subplot(gs_layout[1, 0])
 med_yield = yield_by_crop['mean_t_ha'].median()
 colors_yc = ['#2ecc71' if v >= med_yield else '#e74c3c'
@@ -544,7 +643,6 @@ ax4.set_title("Rendement moyen historique (t/ha)\n"
 ax4.set_xlabel("Rendement moyen (t/ha)")
 ax4.legend(fontsize=8)
 
-# ── 5. Évolution mondiale du rendement ────────────────────────────────────
 ax5 = fig.add_subplot(gs_layout[1, 1])
 yield_trend = df_raw.groupby('Year')[TARGET].mean().reset_index()
 ax5.plot(yield_trend['Year'], yield_trend[TARGET] / 10000,
@@ -554,15 +652,15 @@ ax5.set_xlabel("Année")
 ax5.set_ylabel("Rendement moyen mondial (t/ha)")
 ax5.grid(axis='y', alpha=0.3)
 
-# ── 6. Fiabilité des modèles (R²) ─────────────────────────────────────────
 ax6 = fig.add_subplot(gs_layout[1, 2])
-r2_sorted = df_p2['R2'].sort_values()
-colors_m  = [color_r2(v) for v in r2_sorted]
+r2_sorted  = df_p2['R2'].sort_values()
+colors_m   = [color_r2(v) for v in r2_sorted]
 r2_sorted.plot(kind='barh', ax=ax6, color=colors_m, edgecolor='white')
 ax6.axvline(R2_GOOD, color='green',  linestyle='--', lw=1.2, label=f'Bon (≥{R2_GOOD})')
 ax6.axvline(R2_MED,  color='orange', linestyle='--', lw=1.2, label=f'Moyen (≥{R2_MED})')
-for i, v in enumerate(r2_sorted.values):
-    ax6.text(v + 0.005, i, f'{v:.3f}', va='center', fontsize=9)
+for i, (crop_name, v) in enumerate(r2_sorted.items()):
+    winner = crop_best_model_name.get(crop_name, '')
+    ax6.text(v + 0.005, i, f'{v:.3f} ({winner[:2]})', va='center', fontsize=8)
 ax6.set_title("Fiabilité des modèles par culture (R²)\n"
               "(vert=fiable | orange=moyen | rouge=fragile)", fontsize=10)
 ax6.set_xlabel("R²")
@@ -572,7 +670,6 @@ plt.savefig(png_dir / 'phase3_importance_et_metier.png', dpi=150, bbox_inches='t
 plt.show(block=False)
 print("  [OK] phase3_importance_et_metier.png sauvegardé")
 
-# ── Résumé console Phase 3 ────────────────────────────────────────────────
 best_crop_yield  = yield_by_crop['mean_t_ha'].idxmax()
 worst_crop_yield = yield_by_crop['mean_t_ha'].idxmin()
 temp_pos = temp_corr[temp_corr > 0].idxmax() if (temp_corr > 0).any() else "aucune"
@@ -598,21 +695,6 @@ def predict_yield(crop: str,
                   rainfall_mm: float,
                   avg_temp: float,
                   pesticides_tonnes: float) -> dict:
-    """
-    Fonction 1 — Prédiction du rendement pour une culture et des conditions données.
-
-    Paramètres
-    ----------
-    crop              : nom de la culture  (ex: 'Maize', 'Wheat')
-    rainfall_mm       : pluviométrie annuelle en mm
-    avg_temp          : température moyenne en °C
-    pesticides_tonnes : quantité de pesticides en tonnes
-
-    Retourne
-    --------
-    dict : rendement prédit en hg/ha et t/ha, intervalle de confiance ±RMSE,
-           fiabilité du modèle (R²), interprétation textuelle
-    """
     if crop not in crop_models:
         raise ValueError(
             f"Culture '{crop}' inconnue.\n"
@@ -631,9 +713,8 @@ def predict_yield(crop: str,
     rmse_t_ha  = crop_metrics[crop]['RMSE'] / 10000
     r2         = crop_metrics[crop]['R2']
 
-    # Interprétation métier
-    ref_yield = crop_data_stats[crop]['mean_yield'] / 10000
-    delta_pct = (pred_t_ha - ref_yield) / ref_yield * 100
+    ref_yield  = crop_data_stats[crop]['mean_yield'] / 10000
+    delta_pct  = (pred_t_ha - ref_yield) / ref_yield * 100
     if delta_pct >= 10:
         interpretation = f"[+] Conditions favorables (+{delta_pct:.1f}% vs moyenne historique)"
     elif delta_pct <= -10:
@@ -641,7 +722,6 @@ def predict_yield(crop: str,
     else:
         interpretation = f"[~] Conditions dans la normale ({delta_pct:+.1f}% vs moyenne historique)"
 
-    # Fiabilité du modèle
     if r2 >= R2_GOOD:
         fiabilite = f"[OK] Élevée (R²={r2:.3f})"
     elif r2 >= R2_MED:
@@ -651,6 +731,7 @@ def predict_yield(crop: str,
 
     return {
         'crop':              crop,
+        'model_used':        crop_metrics[crop]['model_name'],
         'yield_hg_ha':       round(pred_hg_ha, 0),
         'yield_t_ha':        round(pred_t_ha,  2),
         'interval_min_t_ha': round(pred_t_ha - rmse_t_ha, 2),
@@ -669,22 +750,6 @@ def recommend_crop(rainfall_mm: float,
                    pesticides_tonnes: float,
                    top_n: int = None,
                    min_r2: float = 0.0) -> pd.DataFrame:
-    """
-    Fonction 2 — Recommande les cultures les plus rentables pour des conditions données.
-    Simule le rendement pour chaque culture et retourne un classement annoté.
-
-    Paramètres
-    ----------
-    rainfall_mm       : pluviométrie annuelle en mm
-    avg_temp          : température moyenne en °C
-    pesticides_tonnes : quantité de pesticides en tonnes
-    top_n             : nombre de cultures à retourner (None = toutes)
-    min_r2            : filtre optionnel — exclure les modèles trop faibles
-
-    Retourne
-    --------
-    DataFrame classé par rendement prédit décroissant
-    """
     results = []
     for crop, model in crop_models.items():
         X_input = pd.DataFrame([{
@@ -701,17 +766,18 @@ def recommend_crop(rainfall_mm: float,
         if r2 < min_r2:
             continue
 
-        ref_yield  = crop_data_stats[crop]['mean_yield'] / 10000
-        delta_pct  = (pred_t_ha - ref_yield) / ref_yield * 100
+        ref_yield = crop_data_stats[crop]['mean_yield'] / 10000
+        delta_pct = (pred_t_ha - ref_yield) / ref_yield * 100
 
         results.append({
-            'crop':              crop,
-            'yield_t_ha':        round(pred_t_ha,  2),
-            'interval':          f"±{rmse_t_ha:.2f}",
-            'vs_historique':     f"{delta_pct:+.1f}%",
-            'model_r2':          r2,
-            'n_train_samples':   crop_data_stats[crop]['n_samples'],
-            'fiabilite':         '[OK]' if r2 >= R2_GOOD else '[~]' if r2 >= R2_MED else '[!]',
+            'crop':            crop,
+            'model_used':      crop_metrics[crop]['model_name'],
+            'yield_t_ha':      round(pred_t_ha,  2),
+            'interval':        f"±{rmse_t_ha:.2f}",
+            'vs_historique':   f"{delta_pct:+.1f}%",
+            'model_r2':        r2,
+            'n_train_samples': crop_data_stats[crop]['n_samples'],
+            'fiabilite':       '[OK]' if r2 >= R2_GOOD else '[~]' if r2 >= R2_MED else '[!]',
         })
 
     df_rec = (pd.DataFrame(results)
@@ -735,32 +801,31 @@ print(f"    Pluviométrie : {CONDITIONS['rainfall_mm']} mm/an")
 print(f"    Température  : {CONDITIONS['avg_temp']} °C")
 print(f"    Pesticides   : {CONDITIONS['pesticides_tonnes']:,.0f} tonnes")
 
-# Fonction 1
 example_crop = CROPS[0]
 res_f1 = predict_yield(example_crop, **CONDITIONS)
 print(f"\n  Fonction 1 — Prédiction pour '{example_crop}' :")
+print(f"    Modèle utilisé   : {res_f1['model_used']}")
 print(f"    Rendement prédit : {res_f1['yield_t_ha']} t/ha "
       f"[{res_f1['interval_min_t_ha']} – {res_f1['interval_max_t_ha']} t/ha]")
 print(f"    {res_f1['interpretation']}")
 print(f"    Fiabilité : {res_f1['fiabilite']}")
 
-# Fonction 2
 df_rec = recommend_crop(**CONDITIONS)
 print(f"\n  Fonction 2 — Recommandation pour ces conditions :")
-print(df_rec[['rang', 'crop', 'yield_t_ha', 'interval',
+print(df_rec[['rang', 'crop', 'model_used', 'yield_t_ha', 'interval',
               'vs_historique', 'model_r2', 'fiabilite']].to_string(index=False))
 print(f"\n  * Recommandation : '{df_rec.iloc[0]['crop']}' "
-      f"→ {df_rec.iloc[0]['yield_t_ha']} t/ha prédit")
+      f"→ {df_rec.iloc[0]['yield_t_ha']} t/ha prédit "
+      f"[{df_rec.iloc[0]['model_used']}]")
 
 # ── Visualisation Recommandation ──────────────────────────────────────────
-fig, ax = plt.subplots(figsize=(11, max(5, len(df_rec) * 0.55 + 1.5)))
+fig, ax = plt.subplots(figsize=(13, max(5, len(df_rec) * 0.55 + 1.5)))
 
 colors_rec = []
-for i, (_, row) in enumerate(df_rec.iterrows()):
-    if row['model_r2'] >= R2_GOOD:   colors_rec.append('#2ecc71')   # Vert : fiable
-    elif row['model_r2'] >= R2_MED:  colors_rec.append('#e67e22')   # Orange : moyen
-    else:                            colors_rec.append('#e74c3c')   # Rouge : fragile
-
+for _, row in df_rec.iterrows():
+    if row['model_r2'] >= R2_GOOD:   colors_rec.append('#2ecc71')
+    elif row['model_r2'] >= R2_MED:  colors_rec.append('#e67e22')
+    else:                            colors_rec.append('#e74c3c')
 
 ax.barh(df_rec['crop'][::-1], df_rec['yield_t_ha'][::-1],
         color=colors_rec[::-1], edgecolor='white')
@@ -768,7 +833,7 @@ ax.barh(df_rec['crop'][::-1], df_rec['yield_t_ha'][::-1],
 for i, (_, row) in enumerate(df_rec[::-1].reset_index(drop=True).iterrows()):
     ax.text(row['yield_t_ha'] + 0.05, i,
             f"{row['yield_t_ha']} t/ha  {row['vs_historique']}  "
-            f"[R²={row['model_r2']:.2f}] {row['fiabilite']}",
+            f"[{row['model_used'][:2]} R²={row['model_r2']:.2f}] {row['fiabilite']}",
             va='center', fontsize=9)
 
 ax.set_title(
@@ -788,7 +853,7 @@ print("\n  [OK] phase4_recommandation_cultures.png sauvegardé")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# PHASE 5 — SAUVEGARDE MODÈLES & MÉTADONNÉES API
+# PHASE 5 — SAUVEGARDE MEILLEUR MODÈLE PAR CULTURE & MÉTADONNÉES API
 # ═══════════════════════════════════════════════════════════════════════════
 
 title_print("Phase 5 — Sauvegarde des modèles & métadonnées API")
@@ -799,41 +864,44 @@ models_dir.mkdir(parents=True, exist_ok=True)
 saved_models = {}
 for crop, model in crop_models.items():
     safe_name  = crop.replace(' ', '_').replace('/', '_')
+    model_name = crop_best_model_name[crop]
     model_path = models_dir / f'model_{safe_name}.joblib'
     joblib.dump(model, model_path)
     saved_models[crop] = str(model_path)
-    print(f"  [OK] {crop:<22} → {model_path.name}")
+    print(f"  [OK] {crop:<22} [{model_name:<18}] → {model_path.name}")
 
 # Métadonnées complètes pour l'API
 model_metadata = {
-    'architecture':    'per_crop_models',
-    'model_type':      'GradientBoostingRegressor',
-    'features':        CLIMATE_FEATURES,
-    'feature_labels':  feature_labels,
-    'target':          TARGET,
-    'target_unit':     TARGET_UNIT,
-    'seed':            SEED,
-    'crops':           CROPS,
-    'models_dir':      str(models_dir),
-    'saved_models':    saved_models,
-    'crop_metrics':    crop_metrics,
-    'crop_best_params': crop_best_params,
-    'crop_data_stats': crop_data_stats,
-    'mlflow_runs':     phase2_runs,
+    'architecture':       'per_crop_models',
+    'model_selection':    'best_of_RF_XGBoost_GradientBoosting_via_GridSearchCV',
+    'features':           CLIMATE_FEATURES,
+    'feature_labels':     feature_labels,
+    'target':             TARGET,
+    'target_unit':        TARGET_UNIT,
+    'seed':               SEED,
+    'crops':              CROPS,
+    'models_dir':         str(models_dir),
+    'saved_models':       saved_models,
+    'crop_metrics':       crop_metrics,
+    'crop_best_params':   crop_best_params,
+    'crop_best_model':    crop_best_model_name,
+    'crop_data_stats':    crop_data_stats,
+    'mlflow_runs':        phase2_runs,
     'functions': {
         'predict_yield':  'predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict',
         'recommend_crop': 'recommend_crop(rainfall_mm, avg_temp, pesticides_tonnes, top_n, min_r2) -> DataFrame',
     },
     'leakage_note': (
         "Architecture sans leakage : Crop n'est PAS une feature. "
-        "Un modèle GradientBoosting distinct est calibré par culture "
-        "sur les seules relations climatiques/agronomiques réelles."
+        "Un modèle distinct (meilleur parmi RF / XGBoost / GradientBoosting) "
+        "est calibré par culture sur les seules relations climatiques/agronomiques réelles."
     ),
     'global_performance': {
-        'mean_r2':   round(float(df_p2['R2'].mean()),    4),
-        'median_r2': round(float(df_p2['R2'].median()),  4),
-        'n_models':  len(crop_models),
+        'mean_r2':       round(float(df_p2['R2'].mean()),   4),
+        'median_r2':     round(float(df_p2['R2'].median()), 4),
+        'n_models':      len(crop_models),
         'n_good_models': int((df_p2['R2'] >= R2_GOOD).sum()),
+        'winner_counts': dict(Counter(crop_best_model_name.values())),
     },
 }
 
@@ -845,18 +913,24 @@ print(f"\n  [OK] model_metadata.json → {metadata_path}")
 print(f"  [OK] {len(saved_models)} modèles joblib → {models_dir}")
 
 # ── Résumé final ──────────────────────────────────────────────────────────
+winner_summary = "  |  ".join(
+    f"{k}: {v}" for k, v in Counter(crop_best_model_name.values()).items()
+)
 print(f"""
 ╔══════════════════════════════════════════════════════════════════════╗
-║          RÉSUMÉ FINAL — PIPELINE ML RENDEMENT AGRICOLE               ║
+║       RÉSUMÉ FINAL — PIPELINE ML RENDEMENT AGRICOLE                  ║
 ╠══════════════════════════════════════════════════════════════════════╣
-║  Architecture       : 1 modèle GradientBoosting / culture            ║ 
-║  Features           : rainfall | température | pesticides            ║
-║  Leakage Crop_*     : [OK] ÉLIMINÉ                                   ║
+║  Architecture    : 1 meilleur modèle / culture (RF|XGB|GB)           ║
+║  Features        : rainfall | température | pesticides               ║
+║  Leakage Crop_*  : [OK] ÉLIMINÉ                                      ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  Cultures modélisées    : {len(crop_models):<43}║
 ║  R² moyen (toutes)      : {df_p2['R2'].mean():<43.4f}║
 ║  R² médian              : {df_p2['R2'].median():<43.4f}║
 ║  Modèles fiables (≥{R2_GOOD}) : {int((df_p2['R2'] >= R2_GOOD).sum()):<43}║
+╠══════════════════════════════════════════════════════════════════════╣
+║  Modèles gagnants par culture :                                      ║
+║    {winner_summary:<66}║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  SCREENSHOTS MLflow générés :                                        ║
 ║    phase1_comparaison_modeles.png                                    ║

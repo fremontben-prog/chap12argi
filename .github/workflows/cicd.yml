@@ -11,7 +11,6 @@
 ##   2. integration → tests d'intégration (vrais .joblib, via GitHub Release)
 ##   3. build       → construction image Docker
 ##   4. push-docker → publication Docker Hub (master uniquement)
-##   5. notify      → notification Slack en cas d'échec
 ## ============================================================================
 
 name: CI/CD — Crop Yield Predictor
