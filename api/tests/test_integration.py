@@ -145,7 +145,7 @@ class TestIntegrationRecommend:
         assert len(r.json()["recommendations"]) == 10
 
     @skip_if_no_models
-    def test_recommend_best_crop_is_pommes de terre(self):
+    def test_recommend_best_crop_is_pommes_de_terre(self):
         """Dans les conditions de référence, pommes de terre doit être recommandé."""
         r = client.post("/recommend", json=REFERENCE_CONDITIONS)
         assert r.json()["best_crop"] == "pommes de terre", (
