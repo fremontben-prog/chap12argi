@@ -29,3 +29,6 @@ mlruns/
 
 # Jupyter Notebook
 .ipynb
+
+# Fichier zippé
+models.tar.gz
