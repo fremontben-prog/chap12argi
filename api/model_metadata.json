@@ -15,56 +15,32 @@
   "target_unit": "hg/ha",
   "seed": 42,
   "crops": [
-    "cassava",
-    "maize",
-    "plantains and others",
-    "potatoes",
-    "rice",
-    "sorghum",
-    "soybean",
-    "sweet potatoes",
-    "wheat",
-    "yams"
+    "bananes plantains et autres",
+    "bl\u00e9",
+    "ignames",
+    "manioc",
+    "ma\u00efs",
+    "patates douces",
+    "pommes de terre",
+    "riz",
+    "soja",
+    "sorgho"
   ],
   "models_dir": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture",
   "saved_models": {
-    "cassava": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_cassava.joblib",
-    "maize": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_maize.joblib",
-    "plantains and others": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_plantains_and_others.joblib",
-    "potatoes": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_potatoes.joblib",
-    "rice": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_rice.joblib",
-    "sorghum": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sorghum.joblib",
-    "soybean": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_soybean.joblib",
-    "sweet potatoes": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sweet_potatoes.joblib",
-    "wheat": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_wheat.joblib",
-    "yams": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_yams.joblib"
+    "bananes plantains et autres": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_bananes_plantains_et_autres.joblib",
+    "bl\u00e9": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_bl\u00e9.joblib",
+    "ignames": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_ignames.joblib",
+    "manioc": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_manioc.joblib",
+    "ma\u00efs": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_ma\u00efs.joblib",
+    "patates douces": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_patates_douces.joblib",
+    "pommes de terre": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_pommes_de_terre.joblib",
+    "riz": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_riz.joblib",
+    "soja": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_soja.joblib",
+    "sorgho": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sorgho.joblib"
   },
   "crop_metrics": {
-    "cassava": {
-      "RMSE": 19598.215,
-      "MAE": 11228.6399,
-      "R2": 0.9513,
-      "MAPE": 12.116,
-      "MAE_t_ha": 1.123,
-      "overfit": 0.0358,
-      "cv_best_r2": 0.951,
-      "cv_std": 0.0073,
-      "composite_score": 0.9312,
-      "model_name": "GradientBoosting"
-    },
-    "maize": {
-      "RMSE": 7692.6834,
-      "MAE": 4532.8161,
-      "R2": 0.9194,
-      "MAPE": 17.0335,
-      "MAE_t_ha": 0.453,
-      "overfit": 0.0581,
-      "cv_best_r2": 0.9251,
-      "cv_std": 0.0114,
-      "composite_score": 0.8869,
-      "model_name": "XGBoost"
-    },
-    "plantains and others": {
+    "bananes plantains et autres": {
       "RMSE": 28040.2611,
       "MAE": 14905.8947,
       "R2": 0.8138,
@@ -76,7 +52,67 @@
       "composite_score": 0.7343,
       "model_name": "XGBoost"
     },
-    "potatoes": {
+    "bl\u00e9": {
+      "RMSE": 4134.4701,
+      "MAE": 2699.5051,
+      "R2": 0.95,
+      "MAPE": 11.9356,
+      "MAE_t_ha": 0.27,
+      "overfit": 0.0336,
+      "cv_best_r2": 0.9521,
+      "cv_std": 0.0052,
+      "composite_score": 0.9316,
+      "model_name": "XGBoost"
+    },
+    "ignames": {
+      "RMSE": 13989.4224,
+      "MAE": 6649.1483,
+      "R2": 0.9328,
+      "MAPE": 10.838,
+      "MAE_t_ha": 0.665,
+      "overfit": 0.0532,
+      "cv_best_r2": 0.9239,
+      "cv_std": 0.0341,
+      "composite_score": 0.896,
+      "model_name": "XGBoost"
+    },
+    "manioc": {
+      "RMSE": 19598.215,
+      "MAE": 11228.6399,
+      "R2": 0.9513,
+      "MAPE": 12.116,
+      "MAE_t_ha": 1.123,
+      "overfit": 0.0358,
+      "cv_best_r2": 0.951,
+      "cv_std": 0.0073,
+      "composite_score": 0.9312,
+      "model_name": "GradientBoosting"
+    },
+    "ma\u00efs": {
+      "RMSE": 7771.0934,
+      "MAE": 4559.6282,
+      "R2": 0.9178,
+      "MAPE": 16.8327,
+      "MAE_t_ha": 0.456,
+      "overfit": 0.0618,
+      "cv_best_r2": 0.9259,
+      "cv_std": 0.0121,
+      "composite_score": 0.8833,
+      "model_name": "XGBoost"
+    },
+    "patates douces": {
+      "RMSE": 24011.7727,
+      "MAE": 10900.4631,
+      "R2": 0.889,
+      "MAPE": 10.149,
+      "MAE_t_ha": 1.09,
+      "overfit": 0.0927,
+      "cv_best_r2": 0.915,
+      "cv_std": 0.0172,
+      "composite_score": 0.8375,
+      "model_name": "XGBoost"
+    },
+    "pommes de terre": {
       "RMSE": 24367.9154,
       "MAE": 15450.2464,
       "R2": 0.9367,
@@ -88,31 +124,19 @@
       "composite_score": 0.9079,
       "model_name": "GradientBoosting"
     },
-    "rice": {
-      "RMSE": 4950.8303,
-      "MAE": 3086.4343,
-      "R2": 0.9354,
-      "MAPE": 8.892,
-      "MAE_t_ha": 0.309,
-      "overfit": 0.0389,
-      "cv_best_r2": 0.9147,
-      "cv_std": 0.0142,
-      "composite_score": 0.9117,
+    "riz": {
+      "RMSE": 5001.3136,
+      "MAE": 3011.05,
+      "R2": 0.934,
+      "MAPE": 8.5251,
+      "MAE_t_ha": 0.301,
+      "overfit": 0.0387,
+      "cv_best_r2": 0.9136,
+      "cv_std": 0.014,
+      "composite_score": 0.9105,
       "model_name": "XGBoost"
     },
-    "sorghum": {
-      "RMSE": 4120.1266,
-      "MAE": 2081.0247,
-      "R2": 0.9135,
-      "MAPE": 15.157,
-      "MAE_t_ha": 0.208,
-      "overfit": 0.0832,
-      "cv_best_r2": 0.8415,
-      "cv_std": 0.0673,
-      "composite_score": 0.8517,
-      "model_name": "GradientBoosting"
-    },
-    "soybean": {
+    "soja": {
       "RMSE": 2537.2637,
       "MAE": 1454.4022,
       "R2": 0.894,
@@ -124,180 +148,156 @@
       "composite_score": 0.8424,
       "model_name": "GradientBoosting"
     },
-    "sweet potatoes": {
-      "RMSE": 24163.8945,
-      "MAE": 10492.0828,
-      "R2": 0.8876,
-      "MAPE": 9.83,
-      "MAE_t_ha": 1.049,
-      "overfit": 0.0954,
-      "cv_best_r2": 0.9148,
-      "cv_std": 0.014,
-      "composite_score": 0.8357,
-      "model_name": "XGBoost"
-    },
-    "wheat": {
-      "RMSE": 4150.624,
-      "MAE": 2679.8214,
-      "R2": 0.9496,
-      "MAPE": 11.8419,
-      "MAE_t_ha": 0.268,
-      "overfit": 0.0343,
-      "cv_best_r2": 0.9527,
-      "cv_std": 0.0051,
-      "composite_score": 0.9309,
-      "model_name": "XGBoost"
-    },
-    "yams": {
-      "RMSE": 13976.5724,
-      "MAE": 6763.0925,
-      "R2": 0.933,
-      "MAPE": 10.8736,
-      "MAE_t_ha": 0.676,
-      "overfit": 0.0527,
-      "cv_best_r2": 0.9257,
-      "cv_std": 0.032,
-      "composite_score": 0.897,
-      "model_name": "XGBoost"
+    "sorgho": {
+      "RMSE": 4120.1266,
+      "MAE": 2081.0247,
+      "R2": 0.9135,
+      "MAPE": 15.157,
+      "MAE_t_ha": 0.208,
+      "overfit": 0.0832,
+      "cv_best_r2": 0.8415,
+      "cv_std": 0.0673,
+      "composite_score": 0.8517,
+      "model_name": "GradientBoosting"
     }
   },
   "crop_best_params": {
-    "cassava": {
-      "learning_rate": 0.05,
-      "max_depth": 7,
-      "n_estimators": 100,
-      "subsample": 0.8
-    },
-    "maize": {
-      "learning_rate": 0.05,
-      "max_depth": 7,
-      "n_estimators": 300,
-      "subsample": 1.0
-    },
-    "plantains and others": {
+    "bananes plantains et autres": {
       "learning_rate": 0.01,
       "max_depth": 5,
       "n_estimators": 300,
       "subsample": 1.0
     },
-    "potatoes": {
-      "learning_rate": 0.05,
-      "max_depth": 7,
-      "n_estimators": 300,
-      "subsample": 0.8
-    },
-    "rice": {
+    "bl\u00e9": {
       "learning_rate": 0.1,
       "max_depth": 5,
       "n_estimators": 300,
       "subsample": 0.8
     },
-    "sorghum": {
-      "learning_rate": 0.1,
+    "ignames": {
+      "learning_rate": 0.05,
       "max_depth": 7,
-      "n_estimators": 200,
+      "n_estimators": 100,
       "subsample": 0.8
     },
-    "soybean": {
+    "manioc": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 100,
+      "subsample": 0.8
+    },
+    "ma\u00efs": {
       "learning_rate": 0.05,
       "max_depth": 7,
       "n_estimators": 300,
       "subsample": 0.8
     },
-    "sweet potatoes": {
+    "patates douces": {
+      "learning_rate": 0.1,
+      "max_depth": 5,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "pommes de terre": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
+      "n_estimators": 300,
+      "subsample": 0.8
+    },
+    "riz": {
       "learning_rate": 0.1,
       "max_depth": 5,
       "n_estimators": 300,
       "subsample": 1.0
     },
-    "wheat": {
-      "learning_rate": 0.1,
-      "max_depth": 5,
+    "soja": {
+      "learning_rate": 0.05,
+      "max_depth": 7,
       "n_estimators": 300,
       "subsample": 0.8
     },
-    "yams": {
-      "learning_rate": 0.05,
+    "sorgho": {
+      "learning_rate": 0.1,
       "max_depth": 7,
-      "n_estimators": 100,
+      "n_estimators": 200,
       "subsample": 0.8
     }
   },
   "crop_best_model": {
-    "cassava": "GradientBoosting",
-    "maize": "XGBoost",
-    "plantains and others": "XGBoost",
-    "potatoes": "GradientBoosting",
-    "rice": "XGBoost",
-    "sorghum": "GradientBoosting",
-    "soybean": "GradientBoosting",
-    "sweet potatoes": "XGBoost",
-    "wheat": "XGBoost",
-    "yams": "XGBoost"
+    "bananes plantains et autres": "XGBoost",
+    "bl\u00e9": "XGBoost",
+    "ignames": "XGBoost",
+    "manioc": "GradientBoosting",
+    "ma\u00efs": "XGBoost",
+    "patates douces": "XGBoost",
+    "pommes de terre": "GradientBoosting",
+    "riz": "XGBoost",
+    "soja": "GradientBoosting",
+    "sorgho": "GradientBoosting"
   },
   "crop_data_stats": {
-    "cassava": {
-      "n_samples": 2045,
-      "mean_yield": 150479.0,
-      "std_yield": 89739.0
-    },
-    "maize": {
-      "n_samples": 4121,
-      "mean_yield": 36310.0,
-      "std_yield": 27456.0
-    },
-    "plantains and others": {
+    "bananes plantains et autres": {
       "n_samples": 556,
       "mean_yield": 106041.0,
       "std_yield": 72128.0
     },
-    "potatoes": {
-      "n_samples": 4276,
-      "mean_yield": 199802.0,
-      "std_yield": 93382.0
-    },
-    "rice": {
-      "n_samples": 3388,
-      "mean_yield": 40730.0,
-      "std_yield": 19170.0
-    },
-    "sorghum": {
-      "n_samples": 3039,
-      "mean_yield": 18636.0,
-      "std_yield": 15118.0
-    },
-    "soybean": {
-      "n_samples": 3223,
-      "mean_yield": 16731.0,
-      "std_yield": 7603.0
-    },
-    "sweet potatoes": {
-      "n_samples": 2890,
-      "mean_yield": 119058.0,
-      "std_yield": 69848.0
-    },
-    "wheat": {
+    "bl\u00e9": {
       "n_samples": 3857,
       "mean_yield": 30116.0,
       "std_yield": 18388.0
     },
-    "yams": {
+    "ignames": {
       "n_samples": 847,
       "mean_yield": 114140.0,
       "std_yield": 54212.0
+    },
+    "manioc": {
+      "n_samples": 2045,
+      "mean_yield": 150479.0,
+      "std_yield": 89739.0
+    },
+    "ma\u00efs": {
+      "n_samples": 4121,
+      "mean_yield": 36310.0,
+      "std_yield": 27456.0
+    },
+    "patates douces": {
+      "n_samples": 2890,
+      "mean_yield": 119058.0,
+      "std_yield": 69848.0
+    },
+    "pommes de terre": {
+      "n_samples": 4276,
+      "mean_yield": 199802.0,
+      "std_yield": 93382.0
+    },
+    "riz": {
+      "n_samples": 3388,
+      "mean_yield": 40730.0,
+      "std_yield": 19170.0
+    },
+    "soja": {
+      "n_samples": 3223,
+      "mean_yield": 16731.0,
+      "std_yield": 7603.0
+    },
+    "sorgho": {
+      "n_samples": 3039,
+      "mean_yield": 18636.0,
+      "std_yield": 15118.0
     }
   },
   "mlflow_runs": {
-    "cassava": "42179354cc6c4268b45855a8cf9b086b",
-    "maize": "191ef7a92c864698afcbcc8074816f22",
-    "plantains and others": "e496400dd8ee40208bc2744973be1877",
-    "potatoes": "5a0b2bc5d1d540ec8ea15a698162947a",
-    "rice": "f611df8614da483cab561b546c51766a",
-    "sorghum": "7e2bf866e9274709b72bb5f6757ff05d",
-    "soybean": "ed1ac2af05154733bb26d644e6761ced",
-    "sweet potatoes": "a297bc4e9b5d4b0fadc00c4774e9b04e",
-    "wheat": "9bab3a41c0e04214997c9df754df7fc9",
-    "yams": "7d58d68a47164455b687ca160627fa4a"
+    "bananes plantains et autres": "d730d2446d4948bf8256f339b4376122",
+    "bl\u00e9": "b0409e1893d5466a90a394588b2b3320",
+    "ignames": "4c9e9b8e08ec4d01ae9546a499d8ab7d",
+    "manioc": "19a30eee5fea478e8201e3699a062619",
+    "ma\u00efs": "847f55f8e1ac4cc1a1774e077351615f",
+    "patates douces": "ee349a80c5744399b3c35674a3df53a9",
+    "pommes de terre": "9d7e35fa57a04c928deb91c092cf9fe2",
+    "riz": "e31dd9d774b04e488d32421fa7c761a2",
+    "soja": "dec712ea44764ca3868f92613519732a",
+    "sorgho": "0434789cbcfb410ebc082c24987b15e5"
   },
   "functions": {
     "predict_yield": "predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict",
@@ -305,13 +305,13 @@
   },
   "leakage_note": "Architecture sans leakage : Crop n'est PAS une feature. Un mod\u00e8le distinct (meilleur parmi RF / XGBoost / GradientBoosting) est calibr\u00e9 par culture sur les seules relations climatiques/agronomiques r\u00e9elles.",
   "global_performance": {
-    "mean_r2": 0.9134,
-    "median_r2": 0.9262,
+    "mean_r2": 0.9133,
+    "median_r2": 0.9253,
     "n_models": 10,
     "n_good_models": 10,
     "winner_counts": {
-      "GradientBoosting": 4,
-      "XGBoost": 6
+      "XGBoost": 6,
+      "GradientBoosting": 4
     }
   }
 }

@@ -109,6 +109,24 @@ df_raw = pd.read_csv(chemin_complet, index_col=0)
 print(f"  Shape (avant Dropna)          : {df_raw.shape}")
 df_raw = df_raw.dropna(subset=CLIMATE_FEATURES + [TARGET, 'Crop'])
 
+# Définition du dictionnaire de traduction
+traduction_cultures = {
+    'potatoes': 'pommes de terre',
+    'cassava': 'manioc',
+    'maize': 'maïs',
+    'wheat': 'blé',
+    'sorghum': 'sorgho',
+    'soybean': 'soja',
+    'rice': 'riz',
+    'yams': 'ignames',
+    'plantains and others': 'bananes plantains et autres',
+    'sweet potatoes': 'patates douces'
+}
+
+# Application de la traduction des cultures
+df_raw['Crop'] = df_raw['Crop'].map(traduction_cultures).fillna(df_raw['Crop'])
+
+
 CROPS = sorted(df_raw['Crop'].unique().tolist())
 
 print(f"  Dataset         : {chemin_complet}")
@@ -141,7 +159,7 @@ MODELS_BASE = {
     'XGBoost':          XGBRegressor(
                             n_estimators=100, learning_rate=0.1, max_depth=5,
                             subsample=0.8, colsample_bytree=0.8,
-                            random_state=SEED, n_jobs=-1
+                            random_state=SEED, n_jobs=-1, device='cpu'
                         )
 }
 
@@ -251,7 +269,7 @@ print("  [OK] phase1_comparaison_modeles.png sauvegardé")
 #   → Log de tous les trials + du meilleur run dans MLflow
 #   → Comparaison avant/après optimisation
 #
-# Pondérations (ajustables) :
+# Pondérations :
 #   LAMBDA_OVERFIT : pénalise le gap train/test        (défaut 0.5)
 #   LAMBDA_STD     : pénalise l'instabilité CV         (défaut 0.3)
 #
@@ -294,7 +312,7 @@ CANDIDATE_MODELS = {
         },
     },
     'XGBoost': {
-        'estimator': XGBRegressor(random_state=SEED, n_jobs=-1),
+        'estimator': XGBRegressor(random_state=SEED, n_jobs=-1,device='cpu'),
         'param_grid': {
             'n_estimators':  [100, 200, 300],
             'max_depth':     [3, 5, 7],
