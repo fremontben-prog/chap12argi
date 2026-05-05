@@ -164,13 +164,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Diagnostic taille image   # ← ajouter ce step
-          run: |
-            echo "=== Gros répertoires ==="
-            docker run --rm ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }} \
-              du -sh /* 2>/dev/null | sort -rh | head -20
-            echo "=== Fichiers > 10MB ==="
-            docker run --rm ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }} \
-              find / -type f -size +10M 2>/dev/null | xargs ls -lh 2>/dev/null | sort -k5 -rh
+        run: |
+          echo "=== Gros répertoires ==="
+          docker run --rm ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }} \
+            du -sh /* 2>/dev/null | sort -rh | head -20
+          echo "=== Fichiers > 10MB ==="
+          docker run --rm ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }} \
+            find / -type f -size +10M 2>/dev/null | xargs ls -lh 2>/dev/null | sort -k5 -rh
 
   # ============================================================
   # JOB 4 — PUSH DOCKER HUB (master uniquement)
