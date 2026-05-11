@@ -26,7 +26,7 @@ data/
 
 # Fichiers de MLFlow
 mlruns/
-mflflow.*
+mlflow.db
 
 # Jupyter Notebook
 .ipynb
