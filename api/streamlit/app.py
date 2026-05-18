@@ -251,9 +251,9 @@ with tab_predict:
     with col_form:
         crops = get_available_crops() if api_ok else []
         if not crops:
-            crops = ["cassava", "maize", "plantains and others", "potatoes",
-                     "rice", "sorghum", "soybean", "sweet potatoes", "wheat", "yams"]
-
+            crops = ["manioc","pommes de terre","bananes plantains et autres","patates douces",
+                     "ignames","riz","sorgho","blé","maïs","soja"]
+            
         crop = st.selectbox("🌱 Culture", options=crops,
                             format_func=lambda x: x.title())
 

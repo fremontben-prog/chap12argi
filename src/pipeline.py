@@ -367,6 +367,8 @@ for crop in CROPS:
             n_jobs=-1, verbose=0, refit=True
         )
         gs.fit(X_train, y_train)
+        
+      
 
         # Métriques du meilleur trial de ce modèle
         m_test  = compute_metrics(y_test,  gs.best_estimator_.predict(X_test))

@@ -35,6 +35,10 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copie du code source
 COPY main.py .
 
+# Copie des artefacts ML (modèles + métadonnées)
+# Ces fichiers peuvent aussi être montés en volume (recommandé en production)
+COPY models_par_culture/ ./models_par_culture/
+COPY model_metadata.json .
 
 # Port exposé par Uvicorn
 EXPOSE 8000

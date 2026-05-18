@@ -26,18 +26,18 @@
     "soja",
     "sorgho"
   ],
-  "models_dir": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture",
+  "models_dir": "api\\models_par_culture",
   "saved_models": {
-    "bananes plantains et autres": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_bananes_plantains_et_autres.joblib",
-    "bl\u00e9": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_bl\u00e9.joblib",
-    "ignames": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_ignames.joblib",
-    "manioc": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_manioc.joblib",
-    "ma\u00efs": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_ma\u00efs.joblib",
-    "patates douces": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_patates_douces.joblib",
-    "pommes de terre": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_pommes_de_terre.joblib",
-    "riz": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_riz.joblib",
-    "soja": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_soja.joblib",
-    "sorgho": "C:\\OpenClassRoom\\Chap12Agri\\chap12agri\\api\\models_par_culture\\model_sorgho.joblib"
+    "bananes plantains et autres": "api\\models_par_culture\\model_bananes_plantains_et_autres.joblib",
+    "bl\u00e9": "api\\models_par_culture\\model_bl\u00e9.joblib",
+    "ignames": "api\\models_par_culture\\model_ignames.joblib",
+    "manioc": "api\\models_par_culture\\model_manioc.joblib",
+    "ma\u00efs": "api\\models_par_culture\\model_ma\u00efs.joblib",
+    "patates douces": "api\\models_par_culture\\model_patates_douces.joblib",
+    "pommes de terre": "api\\models_par_culture\\model_pommes_de_terre.joblib",
+    "riz": "api\\models_par_culture\\model_riz.joblib",
+    "soja": "api\\models_par_culture\\model_soja.joblib",
+    "sorgho": "api\\models_par_culture\\model_sorgho.joblib"
   },
   "crop_metrics": {
     "bananes plantains et autres": {
@@ -288,16 +288,16 @@
     }
   },
   "mlflow_runs": {
-    "bananes plantains et autres": "d730d2446d4948bf8256f339b4376122",
-    "bl\u00e9": "b0409e1893d5466a90a394588b2b3320",
-    "ignames": "4c9e9b8e08ec4d01ae9546a499d8ab7d",
-    "manioc": "19a30eee5fea478e8201e3699a062619",
-    "ma\u00efs": "847f55f8e1ac4cc1a1774e077351615f",
-    "patates douces": "ee349a80c5744399b3c35674a3df53a9",
-    "pommes de terre": "9d7e35fa57a04c928deb91c092cf9fe2",
-    "riz": "e31dd9d774b04e488d32421fa7c761a2",
-    "soja": "dec712ea44764ca3868f92613519732a",
-    "sorgho": "0434789cbcfb410ebc082c24987b15e5"
+    "bananes plantains et autres": "b789e8db7cd94a34ace2f6d0958dc434",
+    "bl\u00e9": "8c9bd208fe2b47d39726547492d79417",
+    "ignames": "6ac1689848e146ee8eaa1a9ab57e5c1f",
+    "manioc": "c7fba42af22247d38142185ed2ef0a50",
+    "ma\u00efs": "eb088778888d42e5ae56bf75708543ea",
+    "patates douces": "517c35f9a7ca420790a8292d795c8232",
+    "pommes de terre": "c8ef63cb5499498281e818262fa5b26f",
+    "riz": "d5d8a40caa3f4c588afe5ea97a1f87ee",
+    "soja": "7547e9d5ff504be9828cae319320122e",
+    "sorgho": "c3ef7f9a9a9f409799799bc70d113b6a"
   },
   "functions": {
     "predict_yield": "predict_yield(crop, rainfall_mm, avg_temp, pesticides_tonnes) -> dict",
